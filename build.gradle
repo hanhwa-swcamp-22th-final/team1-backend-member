@@ -25,16 +25,66 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    /**
+     * [보안 및 인증 - JWT & Spring Security]
+     * 첫 번째 설정 유지: 사용자 인증 및 권한 관리를 담당합니다.
+     */
+    // JWT 생성을 위한 API 명세서
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    // JWT 실제 동작을 담당하는 구현체 (런타임에 필요)
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    // JWT를 JSON으로 변환할 때 Jackson 라이브러리 사용 (런타임에 필요)
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    // 스프링 시큐리티: 로그인, 권한 제어, 보안 필터 등 핵심 보안 프레임워크
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    /**
+     * [웹 및 유효성 검증]
+     * 두 번째 설정 반영: REST API 개발 및 데이터 검증 기능을 포함합니다.
+     */
+    // Spring MVC를 이용한 웹/REST API 개발 핵심 라이브러리
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
+    // Bean Validation: @NotBlank, @Size 등 어노테이션으로 입력값 유효성을 자동 검증
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    /**
+     * [데이터베이스 및 영속성 - JPA & MyBatis & MySQL]
+     * 두 번째 설정(MySQL)으로 교체 및 첫 번째 설정(MyBatis) 유지
+     */
+    // Spring Data JPA: 객체 지향적으로 DB 데이터를 관리 (ORM)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // MySQL Connector: 자바와 MySQL 데이터베이스를 연결하는 드라이버 (두 번째 설정값 반영)
     runtimeOnly 'com.mysql:mysql-connector-j'
+    // MyBatis: SQL 쿼리를 직접 제어할 수 있는 매퍼 프레임워크 (첫 번째 설정 유지)
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
+
+    /**
+     * [개발 편의 도구]
+     * 첫 번째 설정 유지: 반복 코드를 줄이고 개발 생산성을 높입니다.
+     */
+    // ModelMapper: Entity와 DTO 간의 객체 데이터 복사를 자동화
+    implementation 'org.modelmapper:modelmapper:3.2.5'
+    // Lombok: Getter, Setter, 생성자 등을 어노테이션으로 자동 생성 (컴파일 시 필요)
+    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    // DevTools: 코드 수정 시 서버 자동 재시작 등 개발 편의 기능 제공
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    /**
+     * [테스트 도구]
+     * 두 설정의 테스트 라이브러리를 통합하였습니다.
+     */
+    // 스프링 부트 기본 테스트 세트 (JUnit, AssertJ, Mockito 등)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // MyBatis 로직 검증을 위한 테스트 라이브ers
+    testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.5'
+    // 보안(로그인/권한) 관련 로직을 가상으로 테스트하기 위한 도구
+    testImplementation 'org.springframework.security:spring-security-test'
+    // JUnit 테스트를 실행하기 위한 플랫폼 런처
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
+    jvmArgs('-XX:+EnableDynamicAgentLoading')
     useJUnitPlatform()
 }
