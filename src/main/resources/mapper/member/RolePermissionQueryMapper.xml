@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.conk.member.query.infrastructure.mapper.RolePermissionQueryMapper">
+
+    <resultMap id="rolePermissionMatrixRowMap" type="com.conk.member.query.dto.mapper.RolePermissionMatrixRow">
+        <id property="roleId" column="role_id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="permissionId" column="permission_id"/>
+        <result property="permissionName" column="permission_name"/>
+        <result property="canRead" column="can_read"/>
+        <result property="canWrite" column="can_write"/>
+        <result property="canDelete" column="can_delete"/>
+        <result property="isEnabled" column="is_enabled"/>
+    </resultMap>
+
+    <resultMap id="rolePermissionHistoryItemMap" type="com.conk.member.query.dto.mapper.RolePermissionHistoryItem">
+        <id property="historyId" column="history_id"/>
+        <result property="roleId" column="role_id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="permissionId" column="permission_id"/>
+        <result property="permissionName" column="permission_name"/>
+        <result property="actionType" column="action_type"/>
+        <result property="changedBy" column="changed_by"/>
+        <result property="changedAt" column="changed_at"/>
+    </resultMap>
+
+    <select id="findRolePermissionMatrix" resultMap="rolePermissionMatrixRowMap">
+        SELECT rp.role_id,
+        r.role_name,
+        rp.permission_id,
+        p.permission_name,
+        rp.can_read,
+        rp.can_write,
+        rp.can_delete,
+        rp.is_enabled
+        FROM role_permission rp
+        JOIN role r ON r.role_id = rp.role_id
+        JOIN permission p ON p.permission_id = rp.permission_id
+        WHERE r.role_name IN ('WAREHOUSE_MANAGER', 'WAREHOUSE_WORKER')
+        <if test="roleName != null and roleName != ''">
+            AND r.role_name = #{roleName}
+        </if>
+        ORDER BY r.role_name, p.permission_name
+    </select>
+
+    <select id="findRolePermissionHistory" resultMap="rolePermissionHistoryItemMap">
+        SELECT h.history_id AS history_id,
+               h.role_id,
+               r.role_name,
+               h.permission_id,
+               p.permission_name,
+               h.action_type,
+               h.changed_by,
+               h.changed_at
+        FROM role_permission_history h
+                 JOIN role r ON r.role_id = h.role_id
+                 JOIN permission p ON p.permission_id = h.permission_id
+        WHERE h.role_id = #{roleId}
+        ORDER BY h.changed_at DESC, h.history_id DESC
+    </select>
+</mapper>

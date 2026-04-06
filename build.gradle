@@ -80,6 +80,8 @@ dependencies {
     testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.5'
     // 보안(로그인/권한) 관련 로직을 가상으로 테스트하기 위한 도구
     testImplementation 'org.springframework.security:spring-security-test'
+    // 통합테스트용 인메모리 DB
+    testRuntimeOnly 'com.h2database:h2'
     // JUnit 테스트를 실행하기 위한 플랫폼 런처
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

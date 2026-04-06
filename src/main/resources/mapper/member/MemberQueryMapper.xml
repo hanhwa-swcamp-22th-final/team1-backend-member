@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.infrastructure.mapper.MemberQueryMapper">
+
+    <resultMap id="userSummaryMap" type="com.conk.member.query.dto.QueryResponses$UserSummary">
+        <id property="id" column="account_id"/>
+        <result property="name" column="account_name"/>
+        <result property="email" column="email"/>
+        <result property="role" column="role_name"/>
+        <result property="accountStatus" column="account_status"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="workerCode" column="worker_code"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findUsers" resultMap="userSummaryMap">
+        SELECT
+            a.account_id,
+            a.account_name,
+            a.email,
+            r.role_name,
+            a.account_status,
+            a.tenant_id,
+            a.seller_id,
+            a.warehouse_id,
+            a.worker_code,
+            a.last_login_at,
+            a.created_at
+        FROM account a
+        JOIN role r ON r.role_id = a.role_id
+        WHERE (#{tenantId} IS NULL OR a.tenant_id = #{tenantId})
+          AND (#{roleName} IS NULL OR r.role_name = #{roleName})
+          AND (#{accountStatus} IS NULL OR a.account_status = #{accountStatus})
+          AND (#{keyword} IS NULL
+               OR a.account_name LIKE CONCAT('%', #{keyword}, '%')
+               OR a.email LIKE CONCAT('%', #{keyword}, '%')
+               OR a.worker_code LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY a.created_at DESC
+    </select>
+</mapper>
