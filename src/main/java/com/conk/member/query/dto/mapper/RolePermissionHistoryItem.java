@@ -1,8 +1,8 @@
 package com.conk.member.query.dto.mapper;
 
 /*
- * 권한 변경 이력 조회 결과를 담는 DTO다.
- * 변경 시각, 변경자, 대상 권한, 변경 유형을 화면에 내려주기 위한 전용 조회 클래스다.
+ * 권한 변경 이력 MyBatis 조회 결과 DTO.
+ * role_permission_history 테이블 구조에 맞게 필드를 정의한다.
  */
 
 import lombok.Getter;

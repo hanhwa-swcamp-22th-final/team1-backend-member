@@ -3,14 +3,15 @@ package com.conk.member.command.application.service;
 import com.conk.member.command.application.dto.request.MemberRequests;
 import com.conk.member.command.domain.aggregate.Account;
 import com.conk.member.command.domain.aggregate.Role;
-import com.conk.member.command.domain.aggregate.Seller;
 import com.conk.member.command.domain.enums.AccountStatus;
 import com.conk.member.command.domain.enums.RoleName;
 import com.conk.member.command.domain.repository.*;
-import com.conk.member.command.infrastructure.service.MailSupport;
-import com.conk.member.command.infrastructure.service.PasswordSupport;
-import com.conk.member.command.infrastructure.service.TokenSupport;
-import com.conk.member.command.infrastructure.service.WarehouseSupport;
+import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.infrastructure.service.PasswordService;
+import com.conk.member.command.infrastructure.service.TokenService;
+import com.conk.member.common.jwt.JwtTokenProvider;
+import com.conk.member.command.domain.repository.RefreshTokenRepository;
+import com.conk.member.command.infrastructure.service.WarehouseService;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
@@ -38,10 +39,12 @@ class MemberCommandServiceExceptionTest {
     @Mock private RoleRepository roleRepository;
     @Mock private RolePermissionRepository rolePermissionRepository;
     @Mock private RolePermissionHistoryRepository rolePermissionHistoryRepository;
-    @Mock private PasswordSupport passwordSupport;
-    @Mock private TokenSupport tokenSupport;
-    @Mock private MailSupport mailSupport;
-    @Mock private WarehouseSupport warehouseSupport;
+    @Mock private PasswordService passwordService;
+    @Mock private TokenService tokenService;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private MailService mailService;
+    @Mock private WarehouseService warehouseService;
 
     @InjectMocks
     private MemberCommandService memberCommandService;
@@ -76,7 +79,7 @@ class MemberCommandServiceExceptionTest {
             .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
 
         verify(invitationRepository, never()).save(any());
-        verify(mailSupport, never()).sendTemporaryPassword(any(), any());
+        verify(mailService, never()).sendTemporaryPassword(any(), any());
     }
 
     @Test
@@ -88,7 +91,7 @@ class MemberCommandServiceExceptionTest {
         request.setEmail("wm@conk.com");
 
         when(accountRepository.existsByEmail("wm@conk.com")).thenReturn(false);
-        when(warehouseSupport.exists("WH-404")).thenReturn(false);
+        when(warehouseService.exists("WH-404")).thenReturn(false);
 
         assertThatThrownBy(() -> memberCommandService.invite(request, "ACC-001"))
             .isInstanceOf(MemberException.class)
@@ -137,7 +140,7 @@ class MemberCommandServiceExceptionTest {
         request.setWarehouseId("WH-404");
 
         when(accountRepository.existsByWorkerCode("WORKER-001")).thenReturn(false);
-        when(warehouseSupport.exists("WH-404")).thenReturn(false);
+        when(warehouseService.exists("WH-404")).thenReturn(false);
 
         assertThatThrownBy(() -> memberCommandService.createDirect(request))
             .isInstanceOf(MemberException.class)
@@ -228,8 +231,8 @@ class MemberCommandServiceExceptionTest {
         MemberRequests.CreateSellerRequest request = new MemberRequests.CreateSellerRequest();
         request.setWarehouseIds(List.of("WH-001", "WH-404"));
 
-        when(warehouseSupport.exists("WH-001")).thenReturn(true);
-        when(warehouseSupport.exists("WH-404")).thenReturn(false);
+        when(warehouseService.exists("WH-001")).thenReturn(true);
+        when(warehouseService.exists("WH-404")).thenReturn(false);
 
         assertThatThrownBy(() -> memberCommandService.createSeller(request))
             .isInstanceOf(MemberException.class)

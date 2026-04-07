@@ -1,10 +1,9 @@
 package com.conk.member.command.controller;
 
-import com.conk.member.command.application.dto.request.InviteAccountRequest;
-import com.conk.member.command.application.dto.request.LoginRequest;
-import com.conk.member.command.application.dto.response.InviteAccountResponse;
-import com.conk.member.command.application.dto.response.LoginResponse;
-import com.conk.member.command.application.service.AuthService;
+import com.conk.member.command.application.dto.response.MemberResponses;
+import com.conk.member.command.application.service.AuthTokenService;
+import com.conk.member.command.application.service.MemberCommandService;
+import com.conk.member.common.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,10 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -27,55 +27,73 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
-  @Mock
-  private AuthService authService;
+    @Mock
+    private MemberCommandService memberCommandService;
 
-  private MockMvc mockMvc;
-  private ObjectMapper objectMapper;
+    @Mock
+    private AuthTokenService authTokenService;
 
-  @BeforeEach
-  void setUp() {
-    LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-    validator.afterPropertiesSet();
+    private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
-        .setValidator(validator)
-        .build();
-    objectMapper = new ObjectMapper();
-  }
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new MemberCommandController(memberCommandService, authTokenService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
-  @Test
-  @DisplayName("로그인 응답은 success message data 구조로 반환된다")
-  void login_returns_wrapped_response() throws Exception {
-    LoginResponse response = new LoginResponse(
-        1L,
-        "시스템 관리자",
-        "sys.admin@conk.com",
-        "WORKER-001",
-        "SYSTEM_ADMIN",
-        "ACTIVE",
-        "CONK 본사",
-        "mock-token-sys"
-    );
+    @Test
+    @DisplayName("POST /member/auth/login 은 토큰과 사용자 정보를 반환한다")
+    void login_endpoint_returns_token() throws Exception {
+        MemberResponses.LoginResponse loginResponse = new MemberResponses.LoginResponse();
+        loginResponse.setToken("mock-access-token");
+        loginResponse.setId("ACC-001");
+        loginResponse.setEmail("admin@conk.com");
+        loginResponse.setName("총괄관리자");
+        loginResponse.setRole("MASTER_ADMIN");
+        loginResponse.setStatus("ACTIVE");
+        loginResponse.setTenantId("TENANT-001");
 
-    when(authService.login(any(LoginRequest.class))).thenReturn(response);
+        when(memberCommandService.login(any())).thenReturn(loginResponse);
 
-    mockMvc.perform(post("/member/auth/login")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest("sys.admin@conk.com", "password"))))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.message").value("login"))
-        .andExpect(jsonPath("$.data.token").value("mock-token-sys"))
-        .andExpect(jsonPath("$.data.user.id").value(1))
-        .andExpect(jsonPath("$.data.user.email").value("sys.admin@conk.com"))
-        .andExpect(jsonPath("$.data.user.name").value("시스템 관리자"))
-        .andExpect(jsonPath("$.data.user.role").value("SYSTEM_ADMIN"))
-        .andExpect(jsonPath("$.data.user.status").value("ACTIVE"))
-        .andExpect(jsonPath("$.data.user.organization").value("CONK 본사"));
+        mockMvc.perform(post("/member/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "emailOrWorkerCode", "admin@conk.com",
+                                "password", "P@ssw0rd!"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.token").value("mock-access-token"))
+                .andExpect(jsonPath("$.data.role").value("MASTER_ADMIN"));
+    }
 
-    verify(authService).login(any(LoginRequest.class));
-  }
+    @Test
+    @DisplayName("POST /member/auth/invite 는 초대 정보를 반환한다")
+    void invite_endpoint_returns_invitation() throws Exception {
+        MemberResponses.InviteAccountResponse inviteResponse = new MemberResponses.InviteAccountResponse();
+        inviteResponse.setInvitationId("INV-001");
+        inviteResponse.setRole("WAREHOUSE_MANAGER");
+        inviteResponse.setEmail("wm@conk.com");
+        inviteResponse.setInviteStatus("PENDING");
+        inviteResponse.setInviteSentAt(LocalDateTime.now());
 
+        when(memberCommandService.invite(any(), anyString())).thenReturn(inviteResponse);
 
-
+        mockMvc.perform(post("/member/auth/invite")
+                        .header("X-Invoker-Account-Id", "ACC-001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "role", "WAREHOUSE_MANAGER",
+                                "tenantId", "TENANT-001",
+                                "warehouseId", "WH-001",
+                                "name", "창고관리자",
+                                "email", "wm@conk.com"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.invitationId").value("INV-001"))
+                .andExpect(jsonPath("$.data.inviteStatus").value("PENDING"));
+    }
 }

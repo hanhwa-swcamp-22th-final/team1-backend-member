@@ -1,20 +1,18 @@
 package com.conk.member.common.util;
 
 /*
- * success / message / data 구조의 공통 응답 래퍼다.
- * admin raw payload가 아닌 일반 API에서 동일한 응답 형태를 유지하기 위해 사용한다.
+ * 공통 응답 DTO다.
+ * success / message / data 형태를 맞추기 위해 사용한다.
  */
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-@Getter
-@NoArgsConstructor
 public class ApiResponse<T> {
 
     private boolean success;
     private String message;
     private T data;
+
+    public ApiResponse() {
+    }
 
     private ApiResponse(boolean success, String message, T data) {
         this.success = success;
@@ -28,5 +26,17 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> fail(String message, T data) {
         return new ApiResponse<>(false, message, data);
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public T getData() {
+        return data;
     }
 }

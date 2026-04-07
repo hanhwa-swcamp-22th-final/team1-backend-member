@@ -9,6 +9,8 @@ import com.conk.member.command.domain.aggregate.*;
 import com.conk.member.command.domain.enums.*;
 import com.conk.member.command.domain.repository.*;
 import com.conk.member.command.infrastructure.service.*;
+import com.conk.member.common.jwt.JwtTokenProvider;
+import com.conk.member.command.domain.repository.RefreshTokenRepository;
 import com.conk.member.common.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,10 +38,12 @@ class MemberCommandServiceTest {
     @Mock private RoleRepository roleRepository;
     @Mock private RolePermissionRepository rolePermissionRepository;
     @Mock private RolePermissionHistoryRepository rolePermissionHistoryRepository;
-    @Mock private PasswordSupport passwordSupport;
-    @Mock private TokenSupport tokenSupport;
-    @Mock private MailSupport mailSupport;
-    @Mock private WarehouseSupport warehouseSupport;
+    @Mock private PasswordService passwordService;
+    @Mock private TokenService tokenService;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private MailService mailService;
+    @Mock private WarehouseService warehouseService;
     @InjectMocks private MemberCommandService memberCommandService;
 
     @Test
@@ -51,8 +55,11 @@ class MemberCommandServiceTest {
         Tenant tenant = new Tenant(); tenant.setTenantId("TENANT-001"); tenant.setTenantName("FASTSHIP");
         MemberRequests.LoginRequest request = new MemberRequests.LoginRequest(); request.setEmailOrWorkerCode("master@conk.com"); request.setPassword("raw");
         when(accountRepository.findByEmail("master@conk.com")).thenReturn(Optional.of(account));
-        when(passwordSupport.matches("raw", "encoded")).thenReturn(true);
-        when(tokenSupport.createAccessToken(any(), any())).thenReturn("token");
+        when(passwordService.matches("raw", "encoded")).thenReturn(true);
+        when(jwtTokenProvider.createToken(any(), any())).thenReturn("token");
+        when(jwtTokenProvider.createRefreshToken(any(), any())).thenReturn("refresh-token");
+        when(jwtTokenProvider.getRefreshExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any())).thenReturn(null);
         when(tenantRepository.findById("TENANT-001")).thenReturn(Optional.of(tenant));
         assertThat(memberCommandService.login(request).getToken()).isEqualTo("token");
     }
@@ -62,8 +69,7 @@ class MemberCommandServiceTest {
     void setup_password_already_used_fail() {
         MemberToken token = new MemberToken(); token.setIsUsed(Boolean.TRUE); token.setExpiresAt(LocalDateTime.now().plusDays(1));
         MemberRequests.SetupPasswordRequest request = new MemberRequests.SetupPasswordRequest(); request.setSetupToken("raw"); request.setNewPassword("new");
-        when(tokenSupport.hash("raw")).thenReturn("hashed");
-        when(memberTokenRepository.findByTokenHash("hashed")).thenReturn(Optional.of(token));
+                when(memberTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(token));
         assertThatThrownBy(() -> memberCommandService.setupPassword(request)).isInstanceOf(MemberException.class);
     }
 

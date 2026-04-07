@@ -1,8 +1,8 @@
 package com.conk.member.query.dto.mapper;
 
 /*
- * MyBatis 업체 목록 조회 결과를 담는 DTO다.
- * tenant 기반 기본 정보 + seller/account 집계값을 함께 실어 나를 때 사용한다.
+ * MyBatis 업체 목록/단건 조회 결과를 담는 DTO다.
+ * activatedAt 추가 (MEM-013 단건 조회 응답용).
  */
 
 import lombok.Getter;
@@ -20,6 +20,7 @@ public class CompanyListItem {
     private String tenantCode;
     private String status;
     private LocalDateTime createdAt;
+    private LocalDateTime activatedAt;
     private String representative;
     private String businessNumber;
     private String phone;

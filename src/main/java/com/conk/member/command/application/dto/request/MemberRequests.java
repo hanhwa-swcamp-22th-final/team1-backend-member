@@ -123,4 +123,19 @@ public final class MemberRequests {
             private Integer canDelete;
         }
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class UpdateCompanyRequest {
+        private String tenantName;
+        private String representativeName;
+        private String businessNo;
+        private String phoneNo;
+        private String email;
+        private String address;
+        private String tenantType;
+        private String status;
+    }
 }
+// (파일 끝 중괄호 앞에 추가 불가 → 별도 패치)

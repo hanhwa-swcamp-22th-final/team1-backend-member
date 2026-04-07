@@ -20,3 +20,9 @@ mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true
+
+# JWT 설정 (테스트용 — 레퍼런스와 동일한 키 사용)
+jwt:
+  secret: R3SGtsAh7io8ZHeYIhfE4EnRcBawfo4YuSoYyRWQ8UVLSSOsMsWoPe5CAGdlAZfEj9NiawL9VBiwS2fNKXzFFg==
+  expiration: 1800000
+  refresh-expiration: 604800000

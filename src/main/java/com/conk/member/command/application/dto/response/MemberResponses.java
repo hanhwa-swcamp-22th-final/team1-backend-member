@@ -20,7 +20,8 @@ public final class MemberResponses {
     @Setter
     @NoArgsConstructor
     public static class LoginResponse {
-        private String token;
+        private String token;           // accessToken
+        private String refreshToken;    // refreshToken (추가)
         private String id;
         private String email;
         private String name;
@@ -116,6 +117,17 @@ public final class MemberResponses {
     @Getter @Setter @NoArgsConstructor
     public static class RolePermissionUpdateResponse {
         private String roleId;
-        private int updatedCount;
+        private int updatedPermissionCount;   // MEM-020: updatedPermissionCount
+        private LocalDateTime changedAt;      // MEM-020
+        private String changedBy;             // MEM-020
+    }
+
+    @Getter @Setter @NoArgsConstructor
+    public static class UpdateCompanyResponse {
+        private String id;
+        private String tenantCode;
+        private String name;
+        private String status;
+        private java.time.LocalDateTime updatedAt;
     }
 }

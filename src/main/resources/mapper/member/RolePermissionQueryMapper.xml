@@ -27,38 +27,53 @@
         <result property="changedAt" column="changed_at"/>
     </resultMap>
 
-    <select id="findRolePermissionMatrix" resultMap="rolePermissionMatrixRowMap">
-        SELECT rp.role_id,
-        r.role_name,
-        rp.permission_id,
-        p.permission_name,
-        rp.can_read,
-        rp.can_write,
-        rp.can_delete,
-        rp.is_enabled
+    <select id="findRolePermissions" parameterType="string" resultMap="rolePermissionMatrixRowMap">
+        SELECT
+            rp.role_id,
+            r.role_name,
+            rp.permission_id,
+            p.permission_name,
+            rp.can_read,
+            rp.can_write,
+            rp.can_delete,
+            rp.is_enabled
         FROM role_permission rp
-        JOIN role r ON r.role_id = rp.role_id
-        JOIN permission p ON p.permission_id = rp.permission_id
-        WHERE r.role_name IN ('WAREHOUSE_MANAGER', 'WAREHOUSE_WORKER')
-        <if test="roleName != null and roleName != ''">
-            AND r.role_name = #{roleName}
-        </if>
-        ORDER BY r.role_name, p.permission_name
+                 JOIN role r ON r.role_id = rp.role_id
+                 JOIN permission p ON p.permission_id = rp.permission_id
+        WHERE rp.role_id = #{roleId}
+          AND r.role_name IN ('WAREHOUSE_MANAGER', 'WAREHOUSE_WORKER')
+        ORDER BY p.permission_name, rp.permission_id
     </select>
 
-    <select id="findRolePermissionHistory" resultMap="rolePermissionHistoryItemMap">
-        SELECT h.history_id AS history_id,
-               h.role_id,
-               r.role_name,
-               h.permission_id,
-               p.permission_name,
-               h.action_type,
-               h.changed_by,
-               h.changed_at
+    <select id="findRolePermissionHistory"
+            parameterType="com.conk.member.query.dto.condition.PermissionHistorySearchCondition"
+            resultMap="rolePermissionHistoryItemMap">
+        SELECT
+            h.history_id AS history_id,
+            h.role_id,
+            r.role_name,
+            h.permission_id,
+            p.permission_name,
+            h.action_type,
+            h.changed_by,
+            h.changed_at
         FROM role_permission_history h
                  JOIN role r ON r.role_id = h.role_id
                  JOIN permission p ON p.permission_id = h.permission_id
-        WHERE h.role_id = #{roleId}
+        <where>
+            <if test="roleId != null and roleId != ''">
+                h.role_id = #{roleId}
+            </if>
+            <if test="changedBy != null and changedBy != ''">
+                AND h.changed_by = #{changedBy}
+            </if>
+            <if test="changedAtFrom != null">
+                AND h.changed_at <![CDATA[>=]]> #{changedAtFrom}
+            </if>
+            <if test="changedAtTo != null">
+                AND h.changed_at <![CDATA[<=]]> #{changedAtTo}
+            </if>
+        </where>
         ORDER BY h.changed_at DESC, h.history_id DESC
     </select>
 </mapper>

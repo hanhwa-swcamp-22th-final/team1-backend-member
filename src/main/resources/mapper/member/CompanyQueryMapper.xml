@@ -17,6 +17,33 @@
         <result property="sellerCount" column="seller_count"/>
         <result property="userCount" column="user_count"/>
     </resultMap>
+    <resultMap id="companyDetailItemMap" type="com.conk.member.query.dto.mapper.CompanyDetailItem">
+        <id property="id" column="tenant_id"/>
+        <result property="name" column="tenant_name"/>
+        <result property="tenantCode" column="tenant_code"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="activatedAt" column="activated_at"/>
+        <result property="representative" column="representative_name"/>
+        <result property="businessNumber" column="business_no"/>
+        <result property="phone" column="phone_no"/>
+        <result property="email" column="email"/>
+        <result property="address" column="address"/>
+        <result property="companyType" column="tenant_type"/>
+        <result property="sellerCount" column="seller_count"/>
+        <result property="userCount" column="user_count"/>
+    </resultMap>
+
+    <select id="findCompanyById" parameterType="string" resultMap="companyDetailItemMap">
+        SELECT t.tenant_id, t.tenant_name, t.tenant_code, t.status, t.created_at,
+               t.activated_at, t.representative_name, t.business_no, t.phone_no,
+               t.email, t.address, t.tenant_type,
+               (SELECT COUNT(1) FROM seller s WHERE s.tenant_id = t.tenant_id) AS seller_count,
+               (SELECT COUNT(1) FROM account a WHERE a.tenant_id = t.tenant_id) AS user_count
+        FROM tenant t
+        WHERE t.tenant_id = #{id}
+    </select>
+
     <select id="findCompanies" parameterType="com.conk.member.query.dto.condition.CompanySearchCondition" resultMap="companyListItemMap">
         SELECT t.tenant_id, t.tenant_name, t.tenant_code, t.status, t.created_at,
                t.representative_name, t.business_no, t.phone_no, t.email,

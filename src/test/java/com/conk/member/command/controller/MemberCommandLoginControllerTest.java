@@ -6,11 +6,13 @@ package com.conk.member.command.controller;
  */
 
 import com.conk.member.command.application.dto.response.MemberResponses;
+import com.conk.member.command.application.service.AuthTokenService;
 import com.conk.member.command.application.service.MemberCommandService;
 import com.conk.member.common.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MemberCommandController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class MemberCommandLoginControllerTest {
 
@@ -32,6 +35,9 @@ class MemberCommandLoginControllerTest {
 
     @MockitoBean
     private MemberCommandService memberCommandService;
+
+    @MockitoBean
+    private AuthTokenService authTokenService;
 
     @Test
     @DisplayName("로그인 API는 success/data 래퍼로 응답한다")
