@@ -63,7 +63,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable);
+        http.csrf(csrf -> csrf
+                .ignoringRequestMatchers(
+                        "/member/auth/login",
+                        "/member/auth/setup-password",
+                        "/member/auth/refresh"
+                )
+        );
 
         http.sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
