@@ -35,6 +35,9 @@ class MemberCommandDirectUserControllerTest {
     @MockitoBean
     private CreateDirectUserCommandService createDirectUserCommandService;
 
+    @MockitoBean
+    private AuthTokenService authTokenService;
+
     @Test
     @DisplayName("작업자 직접 발급 API는 ACTIVE 상태를 반환한다")
     void create_direct_user_success() throws Exception {

@@ -35,6 +35,9 @@ class MemberCommandLoginControllerTest {
     @MockitoBean
     private LoginCommandService loginCommandService;
 
+    @MockitoBean
+    private AuthTokenService authTokenService;
+
     @Test
     @DisplayName("로그인 API는 success/data 래퍼로 응답한다")
     void login_success() throws Exception {
