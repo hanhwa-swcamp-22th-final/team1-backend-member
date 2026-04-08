@@ -1,14 +1,13 @@
 package com.conk.member.command.application.dto.request;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class LoginRequest{
-  private String loginId;
-  private String password;
-
+public class LoginRequest {
+    private String emailOrWorkerCode;
+    private String password;
 }

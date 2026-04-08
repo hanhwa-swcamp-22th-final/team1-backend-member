@@ -1,26 +1,28 @@
 package com.conk.member.query.controller;
 
-import com.conk.member.command.controller.dto.ApiResponse;
-import com.conk.member.common.MemberApiMockDataFactory;
-import org.springframework.http.ResponseEntity;
+import com.conk.member.common.util.ApiResponse;
+import com.conk.member.query.dto.QueryResponses;
+import com.conk.member.query.service.MemberQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
-@RequestMapping("/member/sellers")
 public class SellerQueryController {
 
-    @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getSellerStats() {
-        return ResponseEntity.ok(ApiResponse.success("getSellerStats", MemberApiMockDataFactory.sellerStats()));
+    private final MemberQueryService memberQueryService;
+
+    public SellerQueryController(MemberQueryService memberQueryService) {
+        this.memberQueryService = memberQueryService;
     }
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getSellerList() {
-        return ResponseEntity.ok(ApiResponse.success("getSellerList", MemberApiMockDataFactory.sellerList()));
+    @GetMapping("/member/sellers")
+    public ApiResponse<List<QueryResponses.SellerSummary>> getSellerList(
+            @RequestParam(required = false) String tenantId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword) {
+        return ApiResponse.ok("seller list", memberQueryService.getSellerList(tenantId, status, keyword));
     }
 }

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.mapper.MemberUserQueryMapper">
+
+    <select id="findUsers" parameterType="com.conk.member.query.dto.UserListRequest"
+            resultType="com.conk.member.query.dto.UserListItem">
+        SELECT
+            a.account_id AS id,
+            a.account_name AS name,
+            a.email AS email,
+            r.role_name AS role,
+            a.account_status AS account_status,
+            a.tenant_id AS tenant_id,
+            a.seller_id AS seller_id,
+            a.warehouse_id AS warehouse_id,
+            a.worker_code AS worker_code,
+            a.last_login_at AS last_login_at,
+            a.created_at AS created_at
+        FROM account a
+        INNER JOIN role r ON r.role_id = a.role_id
+        <where>
+            <if test="tenantId != null and tenantId != ''">
+                a.tenant_id = #{tenantId}
+            </if>
+            <if test="role != null and role != ''">
+                AND r.role_name = #{role}
+            </if>
+            <if test="accountStatus != null and accountStatus != ''">
+                AND a.account_status = #{accountStatus}
+            </if>
+            <if test="sellerId != null and sellerId != ''">
+                AND a.seller_id = #{sellerId}
+            </if>
+            <if test="warehouseId != null and warehouseId != ''">
+                AND a.warehouse_id = #{warehouseId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    a.account_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.email LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.worker_code LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY a.created_at DESC, a.account_id ASC
+    </select>
+
+    <select id="findAdminUsers" parameterType="com.conk.member.query.dto.AdminUserListRequest"
+            resultType="com.conk.member.query.dto.AdminUserListItem">
+        SELECT
+            a.account_id AS id,
+            a.tenant_id AS company_id,
+            a.account_name AS name,
+            a.email AS email,
+            r.role_name AS role,
+            t.tenant_name AS organization,
+            a.seller_id AS seller_id,
+            a.warehouse_id AS warehouse_id,
+            a.worker_code AS worker_code,
+            a.account_status AS status,
+            a.created_at AS registered_at,
+            a.last_login_at AS last_login_at
+        FROM account a
+        INNER JOIN role r ON r.role_id = a.role_id
+        LEFT JOIN tenant t ON t.tenant_id = a.tenant_id
+        <where>
+            <if test="companyId != null and companyId != ''">
+                a.tenant_id = #{companyId}
+            </if>
+            <if test="role != null and role != ''">
+                AND r.role_name = #{role}
+            </if>
+            <if test="status != null and status != ''">
+                AND a.account_status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    a.account_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.email LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.worker_code LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.tenant_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.tenant_code LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY a.created_at DESC, a.account_id ASC
+    </select>
+
+</mapper>

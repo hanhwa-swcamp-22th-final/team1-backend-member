@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.mapper.RolePermissionQueryMapper">
+
+    <resultMap id="rolePermissionMatrixRowMap" type="com.conk.member.query.dto.RolePermissionMatrixRow">
+        <result property="roleId" column="role_id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="permissionId" column="permission_id"/>
+        <result property="menuName" column="menu_name"/>
+        <result property="permissionName" column="permission_name"/>
+        <result property="isEnabled" column="is_enabled"/>
+        <result property="canRead" column="can_read"/>
+        <result property="canWrite" column="can_write"/>
+        <result property="canDelete" column="can_delete"/>
+        <result property="changedAt" column="changed_at"/>
+    </resultMap>
+
+    <resultMap id="rolePermissionHistoryItemMap" type="com.conk.member.query.dto.RolePermissionHistoryItem">
+        <result property="historyId" column="history_id"/>
+        <result property="rolePermissionId" column="role_permission_id"/>
+        <result property="beforeIsEnabled" column="before_is_enabled"/>
+        <result property="beforeCanRead" column="before_can_read"/>
+        <result property="beforeCanWrite" column="before_can_write"/>
+        <result property="beforeCanDelete" column="before_can_delete"/>
+        <result property="afterCanRead" column="after_can_read"/>
+        <result property="afterCanWrite" column="after_can_write"/>
+        <result property="afterCanDelete" column="after_can_delete"/>
+        <result property="changedBy" column="changed_by"/>
+        <result property="changedAt" column="changed_at"/>
+    </resultMap>
+
+    <!--suppress SqlNoDataSourceInspection, SqlResolve -->
+    <select id="findRolePermissions"
+            parameterType="java.lang.String"
+            resultMap="rolePermissionMatrixRowMap">
+        SELECT
+            rp.role_id AS role_id,
+            r.role_name AS role_name,
+            p.permission_id AS permission_id,
+            p.menu_name AS menu_name,
+            p.permission_name AS permission_name,
+            rp.is_enabled AS is_enabled,
+            rp.can_read AS can_read,
+            rp.can_write AS can_write,
+            rp.can_delete AS can_delete,
+            (
+                SELECT MAX(rph.changed_at)
+                FROM role_permission_history rph
+                WHERE rph.role_id = rp.role_id
+                  AND rph.permission_id = rp.permission_id
+            ) AS changed_at
+        FROM role_permission rp
+        INNER JOIN role r ON r.role_id = rp.role_id
+        INNER JOIN permission p ON p.permission_id = rp.permission_id
+        WHERE rp.role_id = #{roleId}
+        ORDER BY p.menu_name ASC, p.permission_id ASC
+    </select>
+
+    <!--suppress SqlNoDataSourceInspection, SqlResolve -->
+    <select id="findRolePermissionHistory"
+            parameterType="com.conk.member.query.dto.PermissionHistoryRequest"
+            resultMap="rolePermissionHistoryItemMap">
+        SELECT
+            history_id,
+            role_permission_id,
+            before_is_enabled,
+            before_can_read,
+            before_can_write,
+            before_can_delete,
+            after_can_read,
+            after_can_write,
+            after_can_delete,
+            changed_by,
+            changed_at
+        FROM role_permission_history
+        <where>
+            role_id = #{roleId}
+            <if test="changedBy != null and changedBy != ''">
+                AND changed_by LIKE CONCAT('%', #{changedBy}, '%')
+            </if>
+            <if test="changedAtFrom != null">
+                AND changed_at <![CDATA[>=]]> #{changedAtFrom}
+            </if>
+            <if test="changedAtTo != null">
+                AND changed_at <![CDATA[<=]]> #{changedAtTo}
+            </if>
+        </where>
+        ORDER BY changed_at DESC, history_id DESC
+    </select>
+
+</mapper>

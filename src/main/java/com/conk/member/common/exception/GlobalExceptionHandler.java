@@ -1,0 +1,54 @@
+package com.conk.member.common.exception;
+
+/*
+ * 전역 예외 처리기다.
+ * 컨트롤러에서 발생한 예외를 공통 응답 형태로 바꿔서 내려준다.
+ */
+
+import com.conk.member.common.util.ApiResponse;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MemberException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleMemberException(MemberException exception) {
+        Map<String, Object> body = createErrorBody(
+                exception.getErrorCode().getCode(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(exception.getErrorCode().getStatus())
+                .body(ApiResponse.fail(exception.getMessage(), body));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleValidationException(MethodArgumentNotValidException exception) {
+        String validationMessage = exception.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        Map<String, Object> body = createErrorBody(ErrorCode.BAD_REQUEST.getCode(), validationMessage);
+
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.fail(ErrorCode.BAD_REQUEST.getMessage(), body));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleException(Exception exception) {
+        Map<String, Object> body = createErrorBody(ErrorCode.INTERNAL_ERROR.getCode(), exception.getMessage());
+
+        return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getStatus())
+                .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR.getMessage(), body));
+    }
+
+    private Map<String, Object> createErrorBody(String code, String message) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("code", code);
+        body.put("message", message);
+        return body;
+    }
+}

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.mapper.CompanyQueryMapper">
+
+    <resultMap id="companyListItemMap" type="com.conk.member.query.dto.CompanyListItem">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="tenantCode" column="tenant_code"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="activatedAt" column="activated_at"/>
+        <result property="representative" column="representative"/>
+        <result property="businessNumber" column="business_number"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="address" column="address"/>
+        <result property="companyType" column="company_type"/>
+        <result property="warehouseCount" column="warehouse_count"/>
+        <result property="sellerCount" column="seller_count"/>
+        <result property="userCount" column="user_count"/>
+    </resultMap>
+
+    <resultMap id="companyDetailItemMap" type="com.conk.member.query.dto.CompanyDetailItem">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="tenantCode" column="tenant_code"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="activatedAt" column="activated_at"/>
+        <result property="representative" column="representative"/>
+        <result property="businessNumber" column="business_number"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="address" column="address"/>
+        <result property="companyType" column="company_type"/>
+        <result property="sellerCount" column="seller_count"/>
+        <result property="userCount" column="user_count"/>
+    </resultMap>
+
+    <select id="findCompanies"
+            parameterType="com.conk.member.query.dto.CompanyListRequest"
+            resultMap="companyListItemMap">
+        SELECT
+            t.tenant_id AS id,
+            t.tenant_name AS name,
+            t.tenant_code AS tenant_code,
+            t.status AS status,
+            t.created_at AS created_at,
+            t.activated_at AS activated_at,
+            t.representative_name AS representative,
+            t.business_no AS business_number,
+            t.phone_no AS phone,
+            t.email AS email,
+            t.address AS address,
+            t.tenant_type AS company_type,
+            (
+                SELECT COUNT(*)
+                FROM seller s
+                WHERE s.tenant_id = t.tenant_id
+            ) AS seller_count,
+            (
+                SELECT COUNT(*)
+                FROM account a
+                WHERE a.tenant_id = t.tenant_id
+            ) AS user_count,
+            (
+                SELECT COUNT(*)
+                FROM (
+                    SELECT DISTINCT a2.warehouse_id
+                    FROM account a2
+                    WHERE a2.tenant_id = t.tenant_id
+                      AND a2.warehouse_id IS NOT NULL
+                    UNION
+                    SELECT DISTINCT sw.warehouse_id
+                    FROM seller_warehouse sw
+                    WHERE sw.tenant_id = t.tenant_id
+                      AND sw.warehouse_id IS NOT NULL
+                ) warehouse_union
+            ) AS warehouse_count
+        FROM tenant t
+        <where>
+            <if test="status != null and status != ''">
+                t.status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    t.tenant_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.tenant_code LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.representative_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.email LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY
+            CASE WHEN (#{sortBy} = 'name' AND (#{sortOrder} = 'asc' OR #{sortOrder} = 'ASC')) THEN t.tenant_name END ASC,
+            CASE WHEN (#{sortBy} = 'status' AND (#{sortOrder} = 'asc' OR #{sortOrder} = 'ASC')) THEN t.status END ASC,
+            CASE WHEN (#{sortBy} = 'tenantCode' AND (#{sortOrder} = 'asc' OR #{sortOrder} = 'ASC')) THEN t.tenant_code END ASC,
+            CASE WHEN (#{sortBy} = 'activatedAt' AND (#{sortOrder} = 'asc' OR #{sortOrder} = 'ASC')) THEN t.activated_at END ASC,
+            CASE WHEN ((#{sortBy} IS NULL OR #{sortBy} = '' OR (#{sortBy} != 'name' AND #{sortBy} != 'status' AND #{sortBy} != 'tenantCode' AND #{sortBy} != 'activatedAt'))
+                 AND (#{sortOrder} = 'asc' OR #{sortOrder} = 'ASC')) THEN t.created_at END ASC,
+            CASE WHEN (#{sortBy} = 'name' AND (#{sortOrder} IS NULL OR #{sortOrder} = '' OR #{sortOrder} = 'desc' OR #{sortOrder} = 'DESC')) THEN t.tenant_name END DESC,
+            CASE WHEN (#{sortBy} = 'status' AND (#{sortOrder} IS NULL OR #{sortOrder} = '' OR #{sortOrder} = 'desc' OR #{sortOrder} = 'DESC')) THEN t.status END DESC,
+            CASE WHEN (#{sortBy} = 'tenantCode' AND (#{sortOrder} IS NULL OR #{sortOrder} = '' OR #{sortOrder} = 'desc' OR #{sortOrder} = 'DESC')) THEN t.tenant_code END DESC,
+            CASE WHEN (#{sortBy} = 'activatedAt' AND (#{sortOrder} IS NULL OR #{sortOrder} = '' OR #{sortOrder} = 'desc' OR #{sortOrder} = 'DESC')) THEN t.activated_at END DESC,
+            CASE WHEN ((#{sortBy} IS NULL OR #{sortBy} = '' OR (#{sortBy} != 'name' AND #{sortBy} != 'status' AND #{sortBy} != 'tenantCode' AND #{sortBy} != 'activatedAt'))
+                 AND (#{sortOrder} IS NULL OR #{sortOrder} = '' OR #{sortOrder} = 'desc' OR #{sortOrder} = 'DESC')) THEN t.created_at END DESC,
+            t.tenant_id ASC
+    </select>
+
+    <select id="findCompanyById"
+            parameterType="java.lang.String"
+            resultMap="companyDetailItemMap">
+        SELECT
+            t.tenant_id AS id,
+            t.tenant_name AS name,
+            t.tenant_code AS tenant_code,
+            t.status AS status,
+            t.created_at AS created_at,
+            t.activated_at AS activated_at,
+            t.representative_name AS representative,
+            t.business_no AS business_number,
+            t.phone_no AS phone,
+            t.email AS email,
+            t.address AS address,
+            t.tenant_type AS company_type,
+            (
+                SELECT COUNT(*)
+                FROM seller s
+                WHERE s.tenant_id = t.tenant_id
+            ) AS seller_count,
+            (
+                SELECT COUNT(*)
+                FROM account a
+                WHERE a.tenant_id = t.tenant_id
+            ) AS user_count
+        FROM tenant t
+        WHERE t.tenant_id = #{id}
+    </select>
+
+</mapper>

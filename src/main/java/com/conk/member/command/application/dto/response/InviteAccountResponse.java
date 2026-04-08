@@ -1,13 +1,22 @@
 package com.conk.member.command.application.dto.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
-@AllArgsConstructor
+@Setter
+@NoArgsConstructor
 public class InviteAccountResponse {
+    private String invitationId;
     private String role;
-    private Long organizationId;
+    private String tenantId;
+    private String sellerId;
+    private String warehouseId;
     private String name;
     private String email;
+    private String inviteStatus;
+    private LocalDateTime inviteSentAt;
 }

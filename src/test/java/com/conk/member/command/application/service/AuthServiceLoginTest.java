@@ -1,242 +1,169 @@
 package com.conk.member.command.application.service;
 
-import com.conk.member.command.application.dto.request.LoginRequest;
-import com.conk.member.command.application.dto.response.LoginResponse;
+/*
+ * 로그인 서비스 단위 테스트.
+ * 구버전(AuthService/LoginRequest/LoginResponse) 참조를 실제 MemberCommandService 기준으로 재작성.
+ */
+
+import com.conk.member.command.application.dto.request.MemberRequests;
+import com.conk.member.command.application.dto.response.MemberResponses;
 import com.conk.member.command.domain.aggregate.Account;
 import com.conk.member.command.domain.aggregate.Role;
 import com.conk.member.command.domain.aggregate.Tenant;
 import com.conk.member.command.domain.enums.AccountStatus;
-import com.conk.member.command.domain.repository.AccountRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.conk.member.command.domain.enums.RoleName;
+import com.conk.member.command.domain.repository.*;
+import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.infrastructure.service.PasswordService;
+import com.conk.member.command.infrastructure.service.TokenService;
+import com.conk.member.common.jwt.JwtTokenProvider;
+import com.conk.member.command.domain.repository.RefreshTokenRepository;
+import com.conk.member.command.infrastructure.service.WarehouseService;
+import com.conk.member.common.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceLoginTest {
 
-  @Mock
-  private AccountRepository accountRepository;
+    @Mock private AccountRepository accountRepository;
+    @Mock private TenantRepository tenantRepository;
+    @Mock private SellerRepository sellerRepository;
+    @Mock private InvitationRepository invitationRepository;
+    @Mock private MemberTokenRepository memberTokenRepository;
+    @Mock private RoleRepository roleRepository;
+    @Mock private RolePermissionRepository rolePermissionRepository;
+    @Mock private RolePermissionHistoryRepository rolePermissionHistoryRepository;
+    @Mock private PasswordService passwordService;
+    @Mock private TokenService tokenService;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private MailService mailService;
+    @Mock private WarehouseService warehouseService;
 
-  @Mock
-  private PasswordHasher passwordHasher;
+    @InjectMocks
+    private MemberCommandService memberCommandService;
 
-  @Mock
-  private TokenProvider tokenProvider;
+    @Test
+    @DisplayName("이메일로 로그인할 수 있다")
+    void login_with_email_success() {
+        Account account = activeAccount("ACC-001", "admin@conk.com", RoleName.MASTER_ADMIN);
 
-  private AuthService authService;
+        when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
+        when(passwordService.matches("raw-password", "encoded-password")).thenReturn(true);
+        when(jwtTokenProvider.createToken("ACC-001", "MASTER_ADMIN")).thenReturn("access-token");
+        when(jwtTokenProvider.createRefreshToken(any(), any())).thenReturn("refresh-token");
+        when(jwtTokenProvider.getRefreshExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any())).thenReturn(null);
 
-  @BeforeEach
-  void setUp() {
-    authService = new AuthService(accountRepository, passwordHasher, tokenProvider);
-  }
+        MemberRequests.LoginRequest request = new MemberRequests.LoginRequest();
+        request.setEmailOrWorkerCode("admin@conk.com");
+        request.setPassword("raw-password");
 
-  @Test
-  @DisplayName("이메일로 로그인할 수 있다")
-  void login_with_email_success() {
-    LoginRequest request = new LoginRequest("admin@conk.com", "raw-password");
-    Account account = spy(activeAccount());
+        MemberResponses.LoginResponse response = memberCommandService.login(request);
 
-    when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
-    when(passwordHasher.matches("raw-password", "encoded-password")).thenReturn(true);
-    when(tokenProvider.createAccessToken(account)).thenReturn("access-token");
-
-    LoginResponse response = authService.login(request);
-
-    assertThat(response).isNotNull();
-    assertThat(response.getAccountId()).isEqualTo(1L);
-    assertThat(response.getName()).isEqualTo("관리자");
-    assertThat(response.getEmail()).isEqualTo("admin@conk.com");
-    assertThat(response.getWorkerCode()).isEqualTo("WORKER-001");
-    assertThat(response.getStatus()).isEqualTo("ACTIVE");
-    assertThat(response.getAccessToken()).isEqualTo("access-token");
-
-    verify(accountRepository).findByEmail("admin@conk.com");
-    verify(accountRepository, never()).findByWorkerCode(any());
-    verify(passwordHasher).matches("raw-password", "encoded-password");
-    verify(account).updateLastLoginAt(any(LocalDateTime.class), anyString());
-    verify(tokenProvider).createAccessToken(account);
-  }
-
-  @Test
-  @DisplayName("작업자 코드로 로그인할 수 있다")
-  void login_with_worker_code_success() {
-    LoginRequest request = new LoginRequest("WORKER-001", "raw-password");
-    Account account = spy(activeAccount());
-
-    when(accountRepository.findByWorkerCode("WORKER-001")).thenReturn(Optional.of(account));
-    when(passwordHasher.matches("raw-password", "encoded-password")).thenReturn(true);
-    when(tokenProvider.createAccessToken(account)).thenReturn("access-token");
-
-    LoginResponse response = authService.login(request);
-
-    assertThat(response).isNotNull();
-    assertThat(response.getAccountId()).isEqualTo(1L);
-    assertThat(response.getName()).isEqualTo("관리자");
-    assertThat(response.getEmail()).isEqualTo("admin@conk.com");
-    assertThat(response.getWorkerCode()).isEqualTo("WORKER-001");
-    assertThat(response.getStatus()).isEqualTo("ACTIVE");
-    assertThat(response.getRole()).isEqualTo("MASTER_ADMIN");
-    assertThat(response.getAccessToken()).isEqualTo("access-token");
-
-    verify(accountRepository).findByWorkerCode("WORKER-001");
-    verify(accountRepository, never()).findByEmail(any());
-    verify(passwordHasher).matches("raw-password", "encoded-password");
-    verify(account).updateLastLoginAt(any(LocalDateTime.class), anyString());
-    verify(tokenProvider).createAccessToken(account);
-  }
-
-  @Test
-  @DisplayName("존재하지 않는 계정이면 로그인에 실패한다")
-  void login_fail_when_account_not_found() {
-    LoginRequest request = new LoginRequest("nobody@conk.com", "raw-password");
-
-    when(accountRepository.findByEmail("nobody@conk.com")).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> authService.login(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("존재하지 않는 계정입니다.");
-
-    verify(accountRepository).findByEmail("nobody@conk.com");
-    verify(passwordHasher, never()).matches(any(), any());
-    verify(tokenProvider, never()).createAccessToken(any());
-  }
-
-  @Test
-  @DisplayName("비밀번호가 일치하지 않으면 로그인에 실패한다")
-  void login_fail_when_password_mismatch() {
-    LoginRequest request = new LoginRequest("admin@conk.com", "wrong-password");
-    Account account = spy(activeAccount());
-
-    when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
-    when(passwordHasher.matches("wrong-password", "encoded-password")).thenReturn(false);
-
-    assertThatThrownBy(() -> authService.login(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("비밀번호가 일치하지 않습니다.");
-
-    verify(accountRepository).findByEmail("admin@conk.com");
-    verify(passwordHasher).matches("wrong-password", "encoded-password");
-    verify(account, never()).updateLastLoginAt(any(LocalDateTime.class), anyString());
-    verify(tokenProvider, never()).createAccessToken(any());
-  }
-
-  @Test
-  @DisplayName("INVITED 상태 계정은 로그인할 수 없다")
-  void login_fail_when_status_is_invited() {
-    LoginRequest request = new LoginRequest("admin@conk.com", "raw-password");
-    Account account = spy(invitedAccount());
-
-    when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
-
-    assertThatThrownBy(() -> authService.login(request))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage("아직 활성화되지 않은 계정입니다.");
-
-    verify(accountRepository).findByEmail("admin@conk.com");
-    verify(passwordHasher, never()).matches(any(), any());
-    verify(account, never()).updateLastLoginAt(any(LocalDateTime.class), anyString());
-    verify(tokenProvider, never()).createAccessToken(any());
-  }
-
-  @Test
-  @DisplayName("LOCKED 상태 계정은 로그인할 수 없다")
-  void login_fail_when_status_is_locked() {
-    LoginRequest request = new LoginRequest("admin@conk.com", "raw-password");
-    Account account = spy(lockedAccount());
-
-    when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
-
-    assertThatThrownBy(() -> authService.login(request))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage("잠긴 계정입니다.");
-
-    verify(accountRepository).findByEmail("admin@conk.com");
-    verify(passwordHasher, never()).matches(any(), any());
-    verify(account, never()).updateLastLoginAt(any(LocalDateTime.class), anyString());
-    verify(tokenProvider, never()).createAccessToken(any());
-  }
-
-  @Test
-  @DisplayName("로그인 성공 시 lastLoginAt이 갱신된다")
-  void update_last_login_at_on_success() {
-    LoginRequest request = new LoginRequest("admin@conk.com", "raw-password");
-    Account account = spy(activeAccount());
-
-    when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
-    when(passwordHasher.matches("raw-password", "encoded-password")).thenReturn(true);
-    when(tokenProvider.createAccessToken(account)).thenReturn("access-token");
-
-    authService.login(request);
-
-    verify(account, times(1)).updateLastLoginAt(any(LocalDateTime.class), anyString());
-  }
-
-  private Account activeAccount() {
-    return buildAccount(AccountStatus.ACTIVE);
-  }
-
-  private Account invitedAccount() {
-    return buildAccount(AccountStatus.INVITED);
-  }
-
-  private Account lockedAccount() {
-    return buildAccount(AccountStatus.LOCKED);
-  }
-
-  private Account buildAccount(AccountStatus status) {
-    Role role = Role.create("ROLE-001", "MASTER_ADMIN", "총괄 관리자", "system");
-    Tenant tenant = Tenant.create(
-        "TENANT-001",
-        "TENANT_CODE_001",
-        "콘크3PL",
-        "대표자",
-        "123-45-67890",
-        "02-1111-2222",
-        "tenant@conk.com",
-        "서울",
-        "GENERAL",
-        "system"
-    );
-
-    Account account = Account.createEmailAccount(
-        role,
-        tenant,
-        null,
-        null,
-        "관리자",
-        "admin@conk.com",
-        "encoded-password",
-        "010-1234-5678",
-        status,
-        false,
-        "system"
-    );
-
-    try {
-      java.lang.reflect.Field field = Account.class.getDeclaredField("accountId");
-      field.setAccessible(true);
-      field.set(account, 1L);
-
-      java.lang.reflect.Field workerCodeField = Account.class.getDeclaredField("workerCode");
-      workerCodeField.setAccessible(true);
-      workerCodeField.set(account, "WORKER-001");
-    } catch (Exception e) {
-      throw new IllegalStateException(e);
+        assertThat(response).isNotNull();
+        assertThat(response.getEmail()).isEqualTo("admin@conk.com");
+        assertThat(response.getToken()).isEqualTo("access-token");
+        assertThat(response.getRole()).isEqualTo("MASTER_ADMIN");
+        verify(accountRepository).save(account);
     }
 
-    return account;
-  }
-}
+    @Test
+    @DisplayName("작업자 코드로 로그인할 수 있다")
+    void login_with_worker_code_success() {
+        Account account = activeAccount("ACC-002", null, RoleName.WAREHOUSE_WORKER);
+        account.setWorkerCode("WORKER-001");
 
+        when(accountRepository.findByEmail("WORKER-001")).thenReturn(Optional.empty());
+        when(accountRepository.findByWorkerCode("WORKER-001")).thenReturn(Optional.of(account));
+        when(passwordService.matches("worker-pass", "encoded-password")).thenReturn(true);
+        when(jwtTokenProvider.createToken("ACC-002", "WAREHOUSE_WORKER")).thenReturn("worker-token");
+        when(jwtTokenProvider.createRefreshToken(any(), any())).thenReturn("refresh-token");
+        when(jwtTokenProvider.getRefreshExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any())).thenReturn(null);
+
+        MemberRequests.LoginRequest request = new MemberRequests.LoginRequest();
+        request.setEmailOrWorkerCode("WORKER-001");
+        request.setPassword("worker-pass");
+
+        MemberResponses.LoginResponse response = memberCommandService.login(request);
+
+        assertThat(response.getToken()).isEqualTo("worker-token");
+        assertThat(response.getRole()).isEqualTo("WAREHOUSE_WORKER");
+    }
+
+    @Test
+    @DisplayName("이메일/비밀번호가 틀리면 로그인에 실패한다")
+    void login_fail_when_wrong_password() {
+        Account account = activeAccount("ACC-001", "admin@conk.com", RoleName.MASTER_ADMIN);
+
+        when(accountRepository.findByEmail("admin@conk.com")).thenReturn(Optional.of(account));
+        when(passwordService.matches("wrong-password", "encoded-password")).thenReturn(false);
+
+        MemberRequests.LoginRequest request = new MemberRequests.LoginRequest();
+        request.setEmailOrWorkerCode("admin@conk.com");
+        request.setPassword("wrong-password");
+
+        assertThatThrownBy(() -> memberCommandService.login(request))
+            .isInstanceOf(MemberException.class);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 계정으로 로그인하면 실패한다")
+    void login_fail_when_account_not_found() {
+        when(accountRepository.findByEmail("nobody@conk.com")).thenReturn(Optional.empty());
+        when(accountRepository.findByWorkerCode("nobody@conk.com")).thenReturn(Optional.empty());
+
+        MemberRequests.LoginRequest request = new MemberRequests.LoginRequest();
+        request.setEmailOrWorkerCode("nobody@conk.com");
+        request.setPassword("any-pass");
+
+        assertThatThrownBy(() -> memberCommandService.login(request))
+            .isInstanceOf(MemberException.class);
+    }
+
+    @Test
+    @DisplayName("비활성화된 계정은 로그인에 실패한다")
+    void login_fail_when_account_inactive() {
+        Account account = activeAccount("ACC-001", "inactive@conk.com", RoleName.MASTER_ADMIN);
+        account.setAccountStatus(AccountStatus.INACTIVE);
+
+        when(accountRepository.findByEmail("inactive@conk.com")).thenReturn(Optional.of(account));
+        when(passwordService.matches("raw-password", "encoded-password")).thenReturn(true);
+
+        MemberRequests.LoginRequest request = new MemberRequests.LoginRequest();
+        request.setEmailOrWorkerCode("inactive@conk.com");
+        request.setPassword("raw-password");
+
+        assertThatThrownBy(() -> memberCommandService.login(request))
+            .isInstanceOf(MemberException.class);
+    }
+
+    private Account activeAccount(String accountId, String email, RoleName roleName) {
+        Role role = new Role();
+        role.setRoleId("ROLE-" + roleName.name());
+        role.setRoleName(roleName);
+
+        Account account = new Account();
+        account.setAccountId(accountId);
+        account.setRole(role);
+        account.setEmail(email);
+        account.setAccountName("테스트 사용자");
+        account.setPasswordHash("encoded-password");
+        account.setAccountStatus(AccountStatus.ACTIVE);
+        account.setIsTemporaryPassword(Boolean.FALSE);
+        return account;
+    }
+}
