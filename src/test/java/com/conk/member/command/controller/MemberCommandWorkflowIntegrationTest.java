@@ -8,7 +8,7 @@ package com.conk.member.command.controller;
 import com.conk.member.command.domain.aggregate.*;
 import com.conk.member.command.domain.enums.*;
 import com.conk.member.command.domain.repository.*;
-import com.conk.member.command.infrastructure.service.TokenSupport;
+import com.conk.member.common.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class MemberCommandWorkflowIntegrationTest {
     @Autowired private SellerRepository sellerRepository;
     @Autowired private InvitationRepository invitationRepository;
     @Autowired private MemberTokenRepository memberTokenRepository;
-    @Autowired private TokenSupport tokenSupport;
+    @Autowired private JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach
     void setUp() {
@@ -77,9 +77,9 @@ class MemberCommandWorkflowIntegrationTest {
                         .contentType("application/json")
                         .content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("FASTSHIP LOGISTICS"))
-                .andExpect(jsonPath("$.status").value("SETTING"))
-                .andExpect(jsonPath("$.masterAdminEmail").value("master@fastship.com"));
+                .andExpect(jsonPath("$.data.name").value("FASTSHIP LOGISTICS"))
+                .andExpect(jsonPath("$.data.status").value("SETTING"))
+                .andExpect(jsonPath("$.data.masterAdminEmail").value("master@fastship.com"));
 
         assertThat(tenantRepository.findAll()).hasSize(1);
         assertThat(accountRepository.findAll()).hasSize(1);
@@ -110,7 +110,14 @@ class MemberCommandWorkflowIntegrationTest {
         MemberToken token = new MemberToken();
         token.setTokenId("TOK-001");
         token.setAccountId("ACC-001");
-        token.setTokenHash(tokenSupport.hash(rawToken));
+        // JwtTokenProvider는 내부 hashToken() 을 사용하므로 여기서도 SHA-256 직접 계산
+        String hashedToken;
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            hashedToken = java.util.Base64.getEncoder().encodeToString(
+                digest.digest(rawToken.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (Exception e) { throw new RuntimeException(e); }
+        token.setTokenHash(hashedToken);
         token.setTokenType(TokenType.INITIAL_PASSWORD_SETUP);
         token.setExpiresAt(LocalDateTime.now().plusDays(1));
         token.setIsUsed(Boolean.FALSE);

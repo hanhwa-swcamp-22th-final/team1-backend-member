@@ -5,12 +5,13 @@ package com.conk.member.command.controller;
  * TDD에서 로그인 테스트와 분리해서 발급 API 스펙을 독립적으로 검증할 수 있게 넣었다.
  */
 
-import com.conk.member.command.application.dto.response.MemberResponses;
-import com.conk.member.command.application.service.MemberCommandService;
+import com.conk.member.command.application.dto.response.CreateDirectUserResponse;
+import com.conk.member.command.application.service.CreateDirectUserCommandService;
 import com.conk.member.common.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -23,7 +24,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(MemberCommandController.class)
+@WebMvcTest(CreateDirectUserController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class MemberCommandDirectUserControllerTest {
 
@@ -31,12 +33,12 @@ class MemberCommandDirectUserControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private MemberCommandService memberCommandService;
+    private CreateDirectUserCommandService createDirectUserCommandService;
 
     @Test
     @DisplayName("작업자 직접 발급 API는 ACTIVE 상태를 반환한다")
     void create_direct_user_success() throws Exception {
-        MemberResponses.CreateDirectUserResponse response = new MemberResponses.CreateDirectUserResponse();
+        CreateDirectUserResponse response = new CreateDirectUserResponse();
         response.setId("ACC-201");
         response.setRole("WAREHOUSE_WORKER");
         response.setName("현장작업자1");
@@ -45,7 +47,7 @@ class MemberCommandDirectUserControllerTest {
         response.setWarehouseId("WH-001");
         response.setAccountStatus("ACTIVE");
 
-        when(memberCommandService.createDirect(any())).thenReturn(response);
+        when(createDirectUserCommandService.createDirect(any())).thenReturn(response);
 
         mockMvc.perform(post("/member/users/direct")
                         .contentType(MediaType.APPLICATION_JSON)

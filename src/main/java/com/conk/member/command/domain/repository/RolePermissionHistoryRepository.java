@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface RolePermissionHistoryRepository extends JpaRepository<RolePermissionHistory, String> {
-    List<RolePermissionHistory> findByRoleId(String roleId);
+    List<RolePermissionHistory> findByRoleIdOrderByChangedAtDesc(String roleId);
 }

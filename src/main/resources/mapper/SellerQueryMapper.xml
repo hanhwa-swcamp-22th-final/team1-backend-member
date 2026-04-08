@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.mapper.SellerQueryMapper">
+
+    <select id="findSellers" parameterType="com.conk.member.query.dto.SellerListRequest"
+            resultType="com.conk.member.query.dto.SellerListItem">
+        SELECT
+            s.seller_id AS id,
+            s.tenant_id AS tenant_id,
+            s.customer_code AS customer_code,
+            s.seller_info AS seller_info,
+            s.brand_name_ko AS brand_name_ko,
+            s.brand_name_en AS brand_name_en,
+            s.representative_name AS representative_name,
+            s.phone_no AS phone_no,
+            s.email AS email,
+            s.category_name AS category_name,
+            s.status AS status,
+            s.created_at AS created_at
+        FROM seller s
+        <where>
+            <if test="tenantId != null and tenantId != ''">
+                s.tenant_id = #{tenantId}
+            </if>
+            <if test="status != null and status != ''">
+                AND s.status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    s.customer_code LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.brand_name_ko LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.brand_name_en LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.representative_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.email LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.category_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.seller_info LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY s.created_at DESC, s.seller_id ASC
+    </select>
+
+</mapper>

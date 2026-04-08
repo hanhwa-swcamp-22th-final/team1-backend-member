@@ -14,6 +14,8 @@ import com.conk.member.command.domain.enums.AccountStatus;
 import com.conk.member.command.domain.enums.RoleName;
 import com.conk.member.command.domain.repository.*;
 import com.conk.member.command.infrastructure.service.*;
+import com.conk.member.common.jwt.JwtTokenProvider;
+import com.conk.member.command.domain.repository.RefreshTokenRepository;
 import com.conk.member.common.exception.MemberException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,10 +43,12 @@ class MemberCommandLoginServiceTest {
     @Mock private RoleRepository roleRepository;
     @Mock private RolePermissionRepository rolePermissionRepository;
     @Mock private RolePermissionHistoryRepository rolePermissionHistoryRepository;
-    @Mock private PasswordSupport passwordSupport;
-    @Mock private TokenSupport tokenSupport;
-    @Mock private MailSupport mailSupport;
-    @Mock private WarehouseSupport warehouseSupport;
+    @Mock private PasswordService passwordService;
+    @Mock private TokenService tokenService;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private MailService mailService;
+    @Mock private WarehouseService warehouseService;
 
     @InjectMocks
     private MemberCommandService memberCommandService;
@@ -62,8 +66,11 @@ class MemberCommandLoginServiceTest {
         tenant.setTenantName("FASTSHIP LOGISTICS");
 
         when(accountRepository.findByEmail("master@conk.com")).thenReturn(Optional.of(account));
-        when(passwordSupport.matches("raw-password", "encoded-password")).thenReturn(true);
-        when(tokenSupport.createAccessToken(eq("ACC-001"), eq("MASTER_ADMIN"))).thenReturn("access-token");
+        when(passwordService.matches("raw-password", "encoded-password")).thenReturn(true);
+        when(jwtTokenProvider.createToken(eq("ACC-001"), eq("MASTER_ADMIN"))).thenReturn("access-token");
+        when(jwtTokenProvider.createRefreshToken(any(), any())).thenReturn("refresh-token");
+        when(jwtTokenProvider.getRefreshExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any())).thenReturn(null);
         when(tenantRepository.findById("TENANT-001")).thenReturn(Optional.of(tenant));
 
         MemberResponses.LoginResponse response = memberCommandService.login(request);
@@ -86,8 +93,11 @@ class MemberCommandLoginServiceTest {
 
         when(accountRepository.findByEmail("WORKER-001")).thenReturn(Optional.empty());
         when(accountRepository.findByWorkerCode("WORKER-001")).thenReturn(Optional.of(account));
-        when(passwordSupport.matches("raw-password", "encoded-password")).thenReturn(true);
-        when(tokenSupport.createAccessToken(eq("ACC-002"), eq("WAREHOUSE_WORKER"))).thenReturn("worker-token");
+        when(passwordService.matches("raw-password", "encoded-password")).thenReturn(true);
+        when(jwtTokenProvider.createToken(eq("ACC-002"), eq("WAREHOUSE_WORKER"))).thenReturn("worker-token");
+        when(jwtTokenProvider.createRefreshToken(any(), any())).thenReturn("refresh-token");
+        when(jwtTokenProvider.getRefreshExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any())).thenReturn(null);
 
         MemberResponses.LoginResponse response = memberCommandService.login(request);
 
@@ -104,7 +114,7 @@ class MemberCommandLoginServiceTest {
 
         Account account = createAccount("ACC-001", "master@conk.com", null, RoleName.MASTER_ADMIN);
         when(accountRepository.findByEmail("master@conk.com")).thenReturn(Optional.of(account));
-        when(passwordSupport.matches("wrong-password", "encoded-password")).thenReturn(false);
+        when(passwordService.matches("wrong-password", "encoded-password")).thenReturn(false);
 
         assertThatThrownBy(() -> memberCommandService.login(request))
             .isInstanceOf(MemberException.class);

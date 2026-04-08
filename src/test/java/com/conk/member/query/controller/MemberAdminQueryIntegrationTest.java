@@ -90,7 +90,7 @@ class MemberAdminQueryIntegrationTest {
                         .param("companyId", "TENANT-001")
                         .param("role", "MASTER_ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].tenantId").value("TENANT-001"))
+                .andExpect(jsonPath("$.items[0].companyId").value("TENANT-001"))
                 .andExpect(jsonPath("$.items[0].role").value("MASTER_ADMIN"))
                 .andExpect(jsonPath("$.items[0].email").value("master@fastship.com"));
     }
