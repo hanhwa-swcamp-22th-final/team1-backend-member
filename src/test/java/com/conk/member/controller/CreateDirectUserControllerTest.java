@@ -111,4 +111,28 @@ class CreateDirectUserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
     }
+
+    @Test
+    @DisplayName("중복 이메일 - 409 Conflict")
+    @WithMockUser
+    void createDirect_duplicateEmail_returns409() throws Exception {
+        given(createDirectUserCommandService.createDirect(any()))
+                .willThrow(new MemberException(ErrorCode.DUPLICATE_EMAIL));
+
+        String requestBody = objectMapper.writeValueAsString(Map.of(
+                "tenantId", "TENANT-001",
+                "warehouseId", "WH-001",
+                "name", "홍길동",
+                "workerCode", "WC-003",
+                "password", "password123",
+                "email", "duplicate@example.com"
+        ));
+
+        mockMvc.perform(post("/member/users/direct")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false));
+    }
 }

@@ -54,4 +54,17 @@ class ResetPasswordControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false));
     }
+
+    @Test
+    @DisplayName("권한 없는 사용자 비밀번호 초기화 - 403 Forbidden")
+    @WithMockUser
+    void resetPassword_forbidden_returns403() throws Exception {
+        given(resetPasswordCommandService.resetPassword("ACC-001"))
+                .willThrow(new MemberException(ErrorCode.FORBIDDEN));
+
+        mockMvc.perform(post("/member/users/ACC-001/reset-password")
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
 }

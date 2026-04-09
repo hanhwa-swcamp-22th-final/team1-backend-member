@@ -61,9 +61,9 @@ class LoginControllerTest {
     }
 
     @Test
-    @DisplayName("잘못된 자격증명 - 서비스 예외 발생 시 전파됨")
+    @DisplayName("잘못된 자격증명 - 401 Unauthorized")
     @WithMockUser
-    void login_invalidCredentials_serviceThrows() throws Exception {
+    void login_invalidCredentials_returns401() throws Exception {
         given(loginCommandService.login(any()))
                 .willThrow(new MemberException(ErrorCode.INVALID_CREDENTIALS));
 
@@ -74,6 +74,43 @@ class LoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody)
                         .with(csrf()))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("비활성화된 계정 로그인 - 403 Forbidden")
+    @WithMockUser
+    void login_inactiveAccount_returns403() throws Exception {
+        given(loginCommandService.login(any()))
+                .willThrow(new MemberException(ErrorCode.FORBIDDEN));
+
+        String requestBody = objectMapper.writeValueAsString(
+                Map.of("emailOrWorkerCode", "inactive@example.com", "password", "password123"));
+
+        mockMvc.perform(post("/member/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 계정 로그인 - 401 Unauthorized")
+    @WithMockUser
+    void login_accountNotFound_returns401() throws Exception {
+        given(loginCommandService.login(any()))
+                .willThrow(new MemberException(ErrorCode.INVALID_CREDENTIALS));
+
+        String requestBody = objectMapper.writeValueAsString(
+                Map.of("emailOrWorkerCode", "none@example.com", "password", "password123"));
+
+        mockMvc.perform(post("/member/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }

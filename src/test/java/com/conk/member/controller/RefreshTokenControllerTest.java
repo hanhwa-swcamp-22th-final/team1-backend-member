@@ -46,15 +46,39 @@ class RefreshTokenControllerTest {
     }
 
     @Test
-    @DisplayName("유효하지 않은 리프레시 토큰 - 서비스 예외 전파")
+    @DisplayName("유효하지 않은 리프레시 토큰 - 401 Unauthorized")
     @WithMockUser
-    void refresh_invalidToken_serviceThrows() throws Exception {
+    void refresh_invalidToken_returns401() throws Exception {
         given(refreshTokenCommandService.refreshToken(any()))
                 .willThrow(new BadCredentialsException("Refresh Token이 일치하지 않습니다."));
 
         mockMvc.perform(post("/member/auth/refresh")
                         .header("Authorization", "Bearer invalid-token")
                         .with(csrf()))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("만료된 리프레시 토큰 - 401 Unauthorized")
+    @WithMockUser
+    void refresh_expiredToken_returns401() throws Exception {
+        given(refreshTokenCommandService.refreshToken(any()))
+                .willThrow(new BadCredentialsException("Refresh Token이 만료되었습니다."));
+
+        mockMvc.perform(post("/member/auth/refresh")
+                        .header("Authorization", "Bearer expired-token")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Authorization 헤더 없음 - 400 Bad Request")
+    @WithMockUser
+    void refresh_missingAuthorizationHeader_returns400() throws Exception {
+        mockMvc.perform(post("/member/auth/refresh")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -3,6 +3,7 @@ package com.conk.member.command.application.service;
 import com.conk.member.command.application.dto.request.CreateSellerRequest;
 import com.conk.member.command.application.dto.response.CreateSellerResponse;
 import com.conk.member.command.domain.aggregate.Seller;
+import com.conk.member.command.domain.enums.SellerStatus;
 import com.conk.member.command.domain.repository.SellerRepository;
 import com.conk.member.command.infrastructure.service.WarehouseService;
 import com.conk.member.common.exception.ErrorCode;
@@ -44,7 +45,7 @@ public class SellerCommandService {
         seller.setPhoneNo(request.getPhoneNo());
         seller.setEmail(request.getEmail());
         seller.setCategoryName(request.getCategoryName());
-        seller.setStatus("ACTIVE");
+        seller.setStatus(SellerStatus.ACTIVE);
         seller.setCustomerCode(generateCode("CUST"));
         sellerRepository.save(seller);
 
@@ -52,7 +53,7 @@ public class SellerCommandService {
         response.setId(seller.getSellerId());
         response.setCustomerCode(seller.getCustomerCode());
         response.setBrandNameKo(seller.getBrandNameKo());
-        response.setStatus(seller.getStatus());
+        response.setStatus(seller.getStatus().name());
         response.setCreatedAt(seller.getCreatedAt());
         return response;
     }
