@@ -13,7 +13,7 @@ import java.util.Properties;
  */
 class MailSendLiveTest {
 
-    private static final String TARGET = "qkrtn0717@naver.com";
+    private static final String TARGET = "@naver.com";
 
     private MailServiceImpl buildMailService() {
         JavaMailSenderImpl sender = new JavaMailSenderImpl();

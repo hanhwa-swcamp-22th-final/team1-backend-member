@@ -1,9 +1,7 @@
 package com.conk.member.command.infrastructure.mail;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
 @ConfigurationProperties(prefix = "app.mail")
 public class MailProperties {
 

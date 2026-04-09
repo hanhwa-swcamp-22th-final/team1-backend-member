@@ -17,10 +17,10 @@ import org.springframework.util.StringUtils;
 @Transactional
 public class ResetPasswordCommandService {
 
-    private final AccountRepository accountRepository;
-    private final TenantRepository tenantRepository;
-    private final PasswordService passwordService;
-    private final MailService mailService;
+  private final AccountRepository accountRepository;
+  private final TenantRepository tenantRepository;
+  private final PasswordService passwordService;
+  private final MailService mailService;
 
     public ResetPasswordCommandService(AccountRepository accountRepository,
                                        TenantRepository tenantRepository,
