@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(//c/Program Files/GitHub CLI//**)",
-      "Read(//c/Users/kimsu/AppData/Local/Programs//**)"
+      "Read(//c/Users/kimsu/AppData/Local/Programs//**)",
+      "Bash(./gradlew compileJava compileTestJava)"
     ]
   }
 }

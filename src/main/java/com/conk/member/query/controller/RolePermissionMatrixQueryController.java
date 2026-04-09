@@ -1,8 +1,8 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.ApiResponse;
-import com.conk.member.query.dto.RolePermissionMatrix;
-import com.conk.member.query.dto.RolePermissionMatrixRequest;
+import com.conk.member.query.dto.request.RolePermissionMatrixRequest;
+import com.conk.member.query.dto.response.RolePermissionMatrixResponse;
 import com.conk.member.query.service.RolePermissionMatrixQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +17,7 @@ public class RolePermissionMatrixQueryController {
     }
 
     @GetMapping("/member/roles/permissions")
-    public ApiResponse<RolePermissionMatrix> getRolePermissions(RolePermissionMatrixRequest request) {
+    public ApiResponse<RolePermissionMatrixResponse> getRolePermissions(RolePermissionMatrixRequest request) {
         return ApiResponse.ok("role permission matrix", rolePermissionMatrixQueryService.getRolePermissions(request));
     }
 }

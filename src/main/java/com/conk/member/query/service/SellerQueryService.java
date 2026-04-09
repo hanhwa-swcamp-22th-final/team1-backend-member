@@ -1,8 +1,7 @@
 package com.conk.member.query.service;
 
-import com.conk.member.query.dto.SellerSummary;
-import com.conk.member.query.dto.SellerListRequest;
-import com.conk.member.query.dto.SellerListItem;
+import com.conk.member.query.dto.request.SellerListRequest;
+import com.conk.member.query.dto.response.SellerListResponse;
 import com.conk.member.query.mapper.SellerQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,21 +19,21 @@ public class SellerQueryService {
         this.sellerQueryMapper = sellerQueryMapper;
     }
 
-    public List<SellerSummary> getSellerList(String tenantId, String status, String keyword) {
+    public List<SellerListResponse> getSellerList(String tenantId, String status, String keyword) {
         SellerListRequest request = new SellerListRequest();
         request.setTenantId(tenantId);
         request.setStatus(status);
         request.setKeyword(keyword);
 
-        List<SellerSummary> result = new ArrayList<>();
-        for (SellerListItem item : sellerQueryMapper.findSellers(request)) {
-            result.add(toSellerSummary(item));
+        List<SellerListResponse> result = new ArrayList<>();
+        for (SellerListResponse item : sellerQueryMapper.findSellers(request)) {
+            result.add(copy(item));
         }
         return result;
     }
 
-    private SellerSummary toSellerSummary(SellerListItem item) {
-        SellerSummary dto = new SellerSummary();
+    private SellerListResponse copy(SellerListResponse item) {
+        SellerListResponse dto = new SellerListResponse();
         dto.setId(item.getId());
         dto.setTenantId(item.getTenantId());
         dto.setCustomerCode(item.getCustomerCode());

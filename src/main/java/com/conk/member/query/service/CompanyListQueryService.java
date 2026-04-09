@@ -2,9 +2,8 @@ package com.conk.member.query.service;
 
 import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.SellerWarehouseRepository;
-import com.conk.member.query.dto.CompanySummary;
-import com.conk.member.query.dto.CompanyListRequest;
-import com.conk.member.query.dto.CompanyListItem;
+import com.conk.member.query.dto.request.CompanyListRequest;
+import com.conk.member.query.dto.response.CompanyListResponse;
 import com.conk.member.query.mapper.CompanyQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,21 +28,22 @@ public class CompanyListQueryService {
         this.sellerWarehouseRepository = sellerWarehouseRepository;
     }
 
-    public List<CompanySummary> getCompanies(CompanyListRequest request) {
-        List<CompanySummary> result = new ArrayList<>();
-        for (CompanyListItem item : companyQueryMapper.findCompanies(request)) {
-            result.add(toCompanySummary(item));
+    public List<CompanyListResponse> getCompanies(CompanyListRequest request) {
+        List<CompanyListResponse> result = new ArrayList<>();
+        for (CompanyListResponse item : companyQueryMapper.findCompanies(request)) {
+            result.add(toCompanyListResponse(item));
         }
         return result;
     }
 
-    private CompanySummary toCompanySummary(CompanyListItem item) {
-        CompanySummary dto = new CompanySummary();
+    private CompanyListResponse toCompanyListResponse(CompanyListResponse item) {
+        CompanyListResponse dto = new CompanyListResponse();
         dto.setId(item.getId());
         dto.setName(item.getName());
         dto.setTenantCode(item.getTenantCode());
         dto.setStatus(item.getStatus());
         dto.setCreatedAt(item.getCreatedAt());
+        dto.setActivatedAt(item.getActivatedAt());
         dto.setRepresentative(item.getRepresentative());
         dto.setBusinessNumber(item.getBusinessNumber());
         dto.setPhone(item.getPhone());

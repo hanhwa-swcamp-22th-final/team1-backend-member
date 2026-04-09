@@ -6,13 +6,15 @@ import com.conk.member.command.domain.aggregate.Account;
 import com.conk.member.command.domain.aggregate.Invitation;
 import com.conk.member.command.domain.aggregate.Role;
 import com.conk.member.command.domain.enums.RoleName;
+import com.conk.member.command.domain.aggregate.Tenant;
 import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.InvitationRepository;
 import com.conk.member.command.domain.repository.RoleRepository;
 import com.conk.member.command.domain.repository.SellerRepository;
-import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.domain.repository.TenantRepository;
 import com.conk.member.command.infrastructure.service.PasswordService;
 import com.conk.member.command.infrastructure.service.WarehouseService;
+import com.conk.member.command.infrastructure.mail.MailService;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class InviteAccountCommandService {
     private final SellerRepository sellerRepository;
     private final InvitationRepository invitationRepository;
     private final RoleRepository roleRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordService passwordService;
     private final MailService mailService;
     private final WarehouseService warehouseService;
@@ -37,6 +40,7 @@ public class InviteAccountCommandService {
                                        SellerRepository sellerRepository,
                                        InvitationRepository invitationRepository,
                                        RoleRepository roleRepository,
+                                       TenantRepository tenantRepository,
                                        PasswordService passwordService,
                                        MailService mailService,
                                        WarehouseService warehouseService) {
@@ -44,6 +48,7 @@ public class InviteAccountCommandService {
         this.sellerRepository = sellerRepository;
         this.invitationRepository = invitationRepository;
         this.roleRepository = roleRepository;
+        this.tenantRepository = tenantRepository;
         this.passwordService = passwordService;
         this.mailService = mailService;
         this.warehouseService = warehouseService;
@@ -85,7 +90,9 @@ public class InviteAccountCommandService {
         invitation.markPending();
         invitationRepository.save(invitation);
 
-        mailService.sendTemporaryPassword(request.getEmail(), temporaryPassword);
+        String companyName = resolveCompanyName(request.getTenantId());
+        mailService.sendInviteMail(request.getEmail(), request.getName(),
+                roleName.name(), companyName, temporaryPassword);
         return createInviteResponse(invitedAccount, invitation, roleName.name());
     }
 
@@ -135,6 +142,12 @@ public class InviteAccountCommandService {
         response.setInviteStatus(invitation.getInviteStatus().name());
         response.setInviteSentAt(invitation.getInviteSentAt());
         return response;
+    }
+
+    private String resolveCompanyName(String tenantId) {
+        return tenantRepository.findById(tenantId)
+                .map(Tenant::getTenantName)
+                .orElse("");
     }
 
     private String generateId(String prefix) {

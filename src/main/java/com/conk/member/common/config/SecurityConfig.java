@@ -3,11 +3,11 @@ package com.conk.member.common.config;
 /*
  * Spring Security 설정 클래스다.
  *
- * 여기서 하는 일
- * 1. 세션 대신 JWT를 사용하도록 설정
- * 2. 어떤 URL은 인증 없이 허용할지 결정
- * 3. JWT 필터와 RBAC 권한 필터를 시큐리티 필터 체인에 등록
- * 4. 비밀번호 암호화에 사용할 PasswordEncoder를 빈으로 등록
+ * 변경 포인트
+ * 1. JWT 무상태 인증이므로 csrf disable은 유지
+ * 2. CORS 허용 대상을 * 가 아니라 프론트 도메인으로 제한
+ * 3. OPTIONS preflight 요청은 허용
+ * 4. 별도 CorsFilter 빈은 제거하고 Security의 cors 설정만 사용
  */
 
 import com.conk.member.common.jwt.JwtAuthenticationFilter;
@@ -30,99 +30,125 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
-    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
-    private final RestAccessDeniedHandler restAccessDeniedHandler;
-    private final RolePermissionAuthorizationService rolePermissionAuthorizationService;
+  private static final List<String> ALLOWED_ORIGINS = List.of(
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://your-frontend-domain.com"
+  );
 
-    public SecurityConfig(JwtTokenProvider jwtTokenProvider,
-                          UserDetailsService userDetailsService,
-                          RestAuthenticationEntryPoint restAuthenticationEntryPoint,
-                          RestAccessDeniedHandler restAccessDeniedHandler,
-                          RolePermissionAuthorizationService rolePermissionAuthorizationService) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userDetailsService = userDetailsService;
-        this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
-        this.restAccessDeniedHandler = restAccessDeniedHandler;
-        this.rolePermissionAuthorizationService = rolePermissionAuthorizationService;
-    }
+  private final JwtTokenProvider jwtTokenProvider;
+  private final UserDetailsService userDetailsService;
+  private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+  private final RestAccessDeniedHandler restAccessDeniedHandler;
+  private final RolePermissionAuthorizationService rolePermissionAuthorizationService;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  public SecurityConfig(JwtTokenProvider jwtTokenProvider,
+                        UserDetailsService userDetailsService,
+                        RestAuthenticationEntryPoint restAuthenticationEntryPoint,
+                        RestAccessDeniedHandler restAccessDeniedHandler,
+                        RolePermissionAuthorizationService rolePermissionAuthorizationService) {
+    this.jwtTokenProvider = jwtTokenProvider;
+    this.userDetailsService = userDetailsService;
+    this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
+    this.restAccessDeniedHandler = restAccessDeniedHandler;
+    this.rolePermissionAuthorizationService = rolePermissionAuthorizationService;
+  }
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf
-                .ignoringRequestMatchers(
-                        "/member/auth/login",
-                        "/member/auth/setup-password",
-                        "/member/auth/refresh"
-                )
-        );
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 
-        http.sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        );
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http.exceptionHandling(exception -> exception
-                .authenticationEntryPoint(restAuthenticationEntryPoint)
-                .accessDeniedHandler(restAccessDeniedHandler)
-        );
+    // JWT Authorization 헤더 기반 무상태 API이므로 CSRF 비활성화
+    http.csrf(AbstractHttpConfigurer::disable);
 
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                        HttpMethod.POST,
-                        "/member/auth/login",
-                        "/member/auth/setup-password",
-                        "/member/auth/refresh"
-                ).permitAll()
-                .requestMatchers("/member/admin/**").hasAuthority("SYSTEM_ADMIN")
-                .anyRequest().authenticated()
-        );
+    http.sessionManagement(session ->
+        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+    );
 
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-        http.addFilterAfter(rolePermissionAuthorizationFilter(), JwtAuthenticationFilter.class);
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+    http.exceptionHandling(exception -> exception
+        .authenticationEntryPoint(restAuthenticationEntryPoint)
+        .accessDeniedHandler(restAccessDeniedHandler)
+    );
 
-        return http.build();
-    }
+    http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
-    }
+    http.authorizeHttpRequests(auth -> auth
+        // 브라우저 preflight 요청 허용
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-    @Bean
-    public RolePermissionAuthorizationFilter rolePermissionAuthorizationFilter() {
-        return new RolePermissionAuthorizationFilter(rolePermissionAuthorizationService, restAccessDeniedHandler);
-    }
+        // 인증 없이 허용할 API
+        .requestMatchers(
+            HttpMethod.POST,
+            "/member/auth/login",
+            "/member/auth/setup-password",
+            "/member/auth/refresh"
+        ).permitAll()
 
-    @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
-    }
+        // 관리자 전용
+        .requestMatchers("/member/admin/**").hasAuthority("SYSTEM_ADMIN")
 
-    @Bean
-    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOriginPattern("*");
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("*");
-        configuration.setAllowCredentials(true);
+        // 나머지는 인증 필요
+        .anyRequest().authenticated()
+    );
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+    http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+    http.addFilterAfter(rolePermissionAuthorizationFilter(), JwtAuthenticationFilter.class);
+
+    return http.build();
+  }
+
+  @Bean
+  public JwtAuthenticationFilter jwtAuthenticationFilter() {
+    return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
+  }
+
+  @Bean
+  public RolePermissionAuthorizationFilter rolePermissionAuthorizationFilter() {
+    return new RolePermissionAuthorizationFilter(rolePermissionAuthorizationService, restAccessDeniedHandler);
+  }
+
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+
+    // 프론트 주소만 허용
+    configuration.setAllowedOrigins(ALLOWED_ORIGINS);
+
+    // 필요한 메서드만 허용
+    configuration.setAllowedMethods(List.of(
+        "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+    ));
+
+    // 필요한 헤더만 허용
+    configuration.setAllowedHeaders(List.of(
+        "Authorization",
+        "Content-Type",
+        "X-Requested-With",
+        "Accept",
+        "Origin"
+    ));
+
+    // JWT를 Authorization 헤더로만 보낼 거면 false가 더 안전하다
+    configuration.setAllowCredentials(false);
+
+    configuration.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+  }
 }

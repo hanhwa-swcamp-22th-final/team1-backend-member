@@ -5,10 +5,10 @@ import com.conk.member.command.domain.enums.RoleName;
 import com.conk.member.command.domain.repository.RoleRepository;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
-import com.conk.member.query.dto.RolePermissionMatrix;
-import com.conk.member.query.dto.RolePermissionRow;
-import com.conk.member.query.dto.RolePermissionMatrixRequest;
-import com.conk.member.query.dto.RolePermissionMatrixRow;
+import com.conk.member.query.dto.request.RolePermissionMatrixRequest;
+import com.conk.member.query.dto.response.RolePermissionMatrixResponse;
+import com.conk.member.query.dto.response.RolePermissionMatrixRowResponse;
+import com.conk.member.query.dto.response.RolePermissionRowResponse;
 import com.conk.member.query.mapper.RolePermissionQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,19 +30,19 @@ public class RolePermissionMatrixQueryService {
         this.rolePermissionQueryMapper = rolePermissionQueryMapper;
     }
 
-    public RolePermissionMatrix getRolePermissions(RolePermissionMatrixRequest request) {
+    public RolePermissionMatrixResponse getRolePermissions(RolePermissionMatrixRequest request) {
         Role role = getRole(request.getRoleId(), request.getRoleName());
         validateRbacScope(role);
 
-        List<RolePermissionMatrixRow> rows = rolePermissionQueryMapper.findRolePermissions(role.getRoleId());
+        List<RolePermissionMatrixRowResponse> rows = rolePermissionQueryMapper.findRolePermissions(role.getRoleId());
 
-        RolePermissionMatrix matrix = new RolePermissionMatrix();
+        RolePermissionMatrixResponse matrix = new RolePermissionMatrixResponse();
         matrix.setRoleId(role.getRoleId());
         matrix.setRoleName(role.getRoleName().name());
 
-        List<RolePermissionRow> permissions = new ArrayList<>();
-        for (RolePermissionMatrixRow row : rows) {
-            RolePermissionRow permissionRow = new RolePermissionRow();
+        List<RolePermissionRowResponse> permissions = new ArrayList<>();
+        for (RolePermissionMatrixRowResponse row : rows) {
+            RolePermissionRowResponse permissionRow = new RolePermissionRowResponse();
             permissionRow.setPermissionId(row.getPermissionId());
             permissionRow.setPermissionName(row.getPermissionName());
             permissionRow.setMenuName(row.getMenuName());

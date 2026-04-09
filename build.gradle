@@ -69,6 +69,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     // DevTools: 코드 수정 시 서버 자동 재시작 등 개발 편의 기능 제공
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    // Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     /**
      * [테스트 도구]

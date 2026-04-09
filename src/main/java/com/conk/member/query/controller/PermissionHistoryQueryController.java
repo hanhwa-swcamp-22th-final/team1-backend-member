@@ -1,8 +1,8 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.ApiResponse;
-import com.conk.member.query.dto.PermissionHistory;
-import com.conk.member.query.dto.PermissionHistoryRequest;
+import com.conk.member.query.dto.request.PermissionHistoryRequest;
+import com.conk.member.query.dto.response.PermissionHistoryResponse;
 import com.conk.member.query.service.PermissionHistoryQueryService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +23,7 @@ public class PermissionHistoryQueryController {
     }
 
     @GetMapping("/member/roles/{roleId}/permission-history")
-    public ApiResponse<List<PermissionHistory>> getRolePermissionHistory(
+    public ApiResponse<List<PermissionHistoryResponse>> getRolePermissionHistory(
             @PathVariable String roleId,
             @RequestParam(required = false) String changedBy,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime changedAtFrom,

@@ -1,8 +1,8 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.AdminPayloadCompat;
-import com.conk.member.query.dto.AdminUserSummary;
-import com.conk.member.query.dto.AdminUserListRequest;
+import com.conk.member.query.dto.request.AdminUserListRequest;
+import com.conk.member.query.dto.response.AdminUserListResponse;
 import com.conk.member.query.service.AdminUserListQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,7 +30,7 @@ public class AdminUserListQueryController {
         request.setRole(role);
         request.setStatus(status);
         request.setKeyword(keyword);
-        List<AdminUserSummary> users = adminUserListQueryService.getAdminUsers(request);
+        List<AdminUserListResponse> users = adminUserListQueryService.getAdminUsers(request);
         return AdminPayloadCompat.items(users);
     }
 }

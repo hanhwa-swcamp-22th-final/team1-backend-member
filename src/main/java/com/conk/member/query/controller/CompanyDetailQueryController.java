@@ -1,8 +1,8 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.AdminPayloadCompat;
-import com.conk.member.query.dto.CompanyDetail;
-import com.conk.member.query.dto.CompanyDetailRequest;
+import com.conk.member.query.dto.request.CompanyDetailRequest;
+import com.conk.member.query.dto.response.CompanyDetailResponse;
 import com.conk.member.query.service.CompanyDetailQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +23,7 @@ public class CompanyDetailQueryController {
     public Map<String, Object> getCompany(@PathVariable String id) {
         CompanyDetailRequest request = new CompanyDetailRequest();
         request.setId(id);
-        CompanyDetail company = companyDetailQueryService.getCompanyById(request);
+        CompanyDetailResponse company = companyDetailQueryService.getCompanyById(request);
         return AdminPayloadCompat.raw(company);
     }
 }

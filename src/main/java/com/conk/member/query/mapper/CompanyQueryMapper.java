@@ -5,9 +5,9 @@ package com.conk.member.query.mapper;
  * MEM-012(목록), MEM-013(단건) 대응.
  */
 
-import com.conk.member.query.dto.CompanyListRequest;
-import com.conk.member.query.dto.CompanyDetailItem;
-import com.conk.member.query.dto.CompanyListItem;
+import com.conk.member.query.dto.request.CompanyListRequest;
+import com.conk.member.query.dto.response.CompanyDetailResponse;
+import com.conk.member.query.dto.response.CompanyListResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,6 +16,6 @@ import java.util.Optional;
 
 @Mapper
 public interface CompanyQueryMapper {
-    List<CompanyListItem> findCompanies(CompanyListRequest request);
-    Optional<CompanyDetailItem> findCompanyById(@Param("id") String id);
+    List<CompanyListResponse> findCompanies(CompanyListRequest request);
+    Optional<CompanyDetailResponse> findCompanyById(@Param("id") String id);
 }

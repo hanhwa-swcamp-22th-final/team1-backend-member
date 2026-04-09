@@ -2,11 +2,9 @@ package com.conk.member.query.service;
 
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
-import com.conk.member.query.dto.CompanyDetail;
-import com.conk.member.query.dto.CompanySummary;
-import com.conk.member.query.dto.CompanyListRequest;
-import com.conk.member.query.dto.CompanyDetailItem;
-import com.conk.member.query.dto.CompanyListItem;
+import com.conk.member.query.dto.request.CompanyListRequest;
+import com.conk.member.query.dto.response.CompanyDetailResponse;
+import com.conk.member.query.dto.response.CompanyListResponse;
 import com.conk.member.query.mapper.CompanyQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,23 +22,23 @@ public class CompanyQueryService {
         this.companyQueryMapper = companyQueryMapper;
     }
 
-    public List<CompanySummary> getCompanies(String keyword, String status) {
+    public List<CompanyListResponse> getCompanies(String keyword, String status) {
         CompanyListRequest request = new CompanyListRequest();
         request.setKeyword(keyword);
         request.setStatus(status);
 
-        List<CompanySummary> result = new ArrayList<>();
-        for (CompanyListItem item : companyQueryMapper.findCompanies(request)) {
-            result.add(toCompanySummary(item));
+        List<CompanyListResponse> result = new ArrayList<>();
+        for (CompanyListResponse item : companyQueryMapper.findCompanies(request)) {
+            result.add(copyCompanyList(item));
         }
         return result;
     }
 
-    public CompanyDetail getCompanyById(String id) {
-        CompanyDetailItem item = companyQueryMapper.findCompanyById(id)
+    public CompanyDetailResponse getCompanyById(String id) {
+        CompanyDetailResponse item = companyQueryMapper.findCompanyById(id)
                 .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
 
-        CompanyDetail detail = new CompanyDetail();
+        CompanyDetailResponse detail = new CompanyDetailResponse();
         detail.setId(item.getId());
         detail.setName(item.getName());
         detail.setTenantCode(item.getTenantCode());
@@ -58,13 +56,14 @@ public class CompanyQueryService {
         return detail;
     }
 
-    private CompanySummary toCompanySummary(CompanyListItem item) {
-        CompanySummary dto = new CompanySummary();
+    private CompanyListResponse copyCompanyList(CompanyListResponse item) {
+        CompanyListResponse dto = new CompanyListResponse();
         dto.setId(item.getId());
         dto.setName(item.getName());
         dto.setTenantCode(item.getTenantCode());
         dto.setStatus(item.getStatus());
         dto.setCreatedAt(item.getCreatedAt());
+        dto.setActivatedAt(item.getActivatedAt());
         dto.setRepresentative(item.getRepresentative());
         dto.setBusinessNumber(item.getBusinessNumber());
         dto.setPhone(item.getPhone());

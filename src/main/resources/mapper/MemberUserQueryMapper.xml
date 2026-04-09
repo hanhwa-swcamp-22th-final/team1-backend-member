@@ -4,8 +4,8 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.conk.member.query.mapper.MemberUserQueryMapper">
 
-    <select id="findUsers" parameterType="com.conk.member.query.dto.UserListRequest"
-            resultType="com.conk.member.query.dto.UserListItem">
+    <select id="findUsers" parameterType="com.conk.member.query.dto.request.UserListRequest"
+            resultType="com.conk.member.query.dto.response.UserListResponse">
         SELECT
             a.account_id AS id,
             a.account_name AS name,
@@ -47,8 +47,8 @@
         ORDER BY a.created_at DESC, a.account_id ASC
     </select>
 
-    <select id="findAdminUsers" parameterType="com.conk.member.query.dto.AdminUserListRequest"
-            resultType="com.conk.member.query.dto.AdminUserListItem">
+    <select id="findAdminUsers" parameterType="com.conk.member.query.dto.request.AdminUserListRequest"
+            resultType="com.conk.member.query.dto.response.AdminUserListResponse">
         SELECT
             a.account_id AS id,
             a.tenant_id AS company_id,

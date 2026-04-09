@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.conk.member.query.mapper.MemberQueryMapper">
 
-    <select id="findUsers" resultType="com.conk.member.query.dto.UserSummary">
+    <select id="findUsers" resultType="com.conk.member.query.dto.response.UserListResponse">
         SELECT
             a.account_id AS id,
             a.account_name AS name,

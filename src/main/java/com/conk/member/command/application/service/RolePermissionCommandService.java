@@ -1,5 +1,6 @@
 package com.conk.member.command.application.service;
 
+import com.conk.member.command.application.dto.request.PermissionUpdateRequest;
 import com.conk.member.command.application.dto.request.UpdateRolePermissionsRequest;
 import com.conk.member.command.application.dto.response.RolePermissionUpdateResponse;
 import com.conk.member.command.domain.aggregate.Role;
@@ -48,7 +49,7 @@ public class RolePermissionCommandService {
 
         int updatedCount = 0;
         if (request.getPermissions() != null) {
-            for (UpdateRolePermissionsRequest.PermissionUpdate permissionUpdate : request.getPermissions()) {
+            for (PermissionUpdateRequest permissionUpdate : request.getPermissions()) {
                 updatedCount += updateSinglePermission(roleId, permissionUpdate, changedBy);
             }
         }
@@ -62,7 +63,7 @@ public class RolePermissionCommandService {
     }
 
     private int updateSinglePermission(String roleId,
-                                       UpdateRolePermissionsRequest.PermissionUpdate permissionUpdate,
+                                       PermissionUpdateRequest permissionUpdate,
                                        String changedBy) {
         RolePermission rolePermission = rolePermissionRepository
                 .findByRoleIdAndPermissionId(roleId, permissionUpdate.getPermissionId())

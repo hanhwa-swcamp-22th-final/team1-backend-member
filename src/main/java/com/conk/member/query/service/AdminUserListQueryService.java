@@ -1,8 +1,7 @@
 package com.conk.member.query.service;
 
-import com.conk.member.query.dto.AdminUserSummary;
-import com.conk.member.query.dto.AdminUserListRequest;
-import com.conk.member.query.dto.AdminUserListItem;
+import com.conk.member.query.dto.request.AdminUserListRequest;
+import com.conk.member.query.dto.response.AdminUserListResponse;
 import com.conk.member.query.mapper.MemberUserQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +19,16 @@ public class AdminUserListQueryService {
         this.memberUserQueryMapper = memberUserQueryMapper;
     }
 
-    public List<AdminUserSummary> getAdminUsers(AdminUserListRequest request) {
-        List<AdminUserSummary> result = new ArrayList<>();
-        for (AdminUserListItem item : memberUserQueryMapper.findAdminUsers(request)) {
-            result.add(toAdminUserSummary(item));
+    public List<AdminUserListResponse> getAdminUsers(AdminUserListRequest request) {
+        List<AdminUserListResponse> result = new ArrayList<>();
+        for (AdminUserListResponse item : memberUserQueryMapper.findAdminUsers(request)) {
+            result.add(copy(item));
         }
         return result;
     }
 
-    private AdminUserSummary toAdminUserSummary(AdminUserListItem item) {
-        AdminUserSummary dto = new AdminUserSummary();
+    private AdminUserListResponse copy(AdminUserListResponse item) {
+        AdminUserListResponse dto = new AdminUserListResponse();
         dto.setId(item.getId());
         dto.setCompanyId(item.getCompanyId());
         dto.setName(item.getName());

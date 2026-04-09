@@ -5,7 +5,7 @@ package com.conk.member.query.mapper;
  * JPA Repository 대신 명시적인 SQL을 사용해 조회 성능/결과를 검증하는 예시로 넣었다.
  */
 
-import com.conk.member.query.dto.UserSummary;
+import com.conk.member.query.dto.response.UserListResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -14,10 +14,10 @@ import java.util.List;
 @Mapper
 public interface MemberQueryMapper {
 
-  List<UserSummary> findUsers(
-      @Param("tenantId") String tenantId,
-      @Param("roleName") String roleName,
-      @Param("accountStatus") String accountStatus,
-      @Param("keyword") String keyword
-  );
+    List<UserListResponse> findUsers(
+            @Param("tenantId") String tenantId,
+            @Param("roleName") String roleName,
+            @Param("accountStatus") String accountStatus,
+            @Param("keyword") String keyword
+    );
 }

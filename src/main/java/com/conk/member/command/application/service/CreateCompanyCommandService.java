@@ -14,7 +14,7 @@ import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.MemberTokenRepository;
 import com.conk.member.command.domain.repository.RoleRepository;
 import com.conk.member.command.domain.repository.TenantRepository;
-import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.infrastructure.mail.MailService;
 import com.conk.member.command.infrastructure.service.TokenService;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
@@ -77,7 +77,7 @@ public class CreateCompanyCommandService {
         accountRepository.save(adminAccount);
 
         String rawSetupToken = issueSetupToken(adminAccount.getAccountId());
-        mailService.sendSetupLink(adminAccount.getEmail(), rawSetupToken);
+        mailService.sendSetupLink(adminAccount.getEmail(), adminAccount.getAccountName(), tenant.getTenantName(), rawSetupToken);
 
         CreateCompanyResponse response = new CreateCompanyResponse();
         response.setId(tenant.getTenantId());

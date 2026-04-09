@@ -2,9 +2,8 @@ package com.conk.member.query.service;
 
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
-import com.conk.member.query.dto.CompanyDetail;
-import com.conk.member.query.dto.CompanyDetailRequest;
-import com.conk.member.query.dto.CompanyDetailItem;
+import com.conk.member.query.dto.request.CompanyDetailRequest;
+import com.conk.member.query.dto.response.CompanyDetailResponse;
 import com.conk.member.query.mapper.CompanyQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,11 +18,11 @@ public class CompanyDetailQueryService {
         this.companyQueryMapper = companyQueryMapper;
     }
 
-    public CompanyDetail getCompanyById(CompanyDetailRequest request) {
-        CompanyDetailItem item = companyQueryMapper.findCompanyById(request.getId())
+    public CompanyDetailResponse getCompanyById(CompanyDetailRequest request) {
+        CompanyDetailResponse item = companyQueryMapper.findCompanyById(request.getId())
                 .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
 
-        CompanyDetail detail = new CompanyDetail();
+        CompanyDetailResponse detail = new CompanyDetailResponse();
         detail.setId(item.getId());
         detail.setName(item.getName());
         detail.setTenantCode(item.getTenantCode());

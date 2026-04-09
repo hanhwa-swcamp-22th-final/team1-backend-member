@@ -5,14 +5,16 @@ import com.conk.member.command.application.dto.response.CreateAdminUserResponse;
 import com.conk.member.command.domain.aggregate.Account;
 import com.conk.member.command.domain.aggregate.Invitation;
 import com.conk.member.command.domain.aggregate.Role;
+import com.conk.member.command.domain.aggregate.Tenant;
 import com.conk.member.command.domain.enums.RoleName;
 import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.InvitationRepository;
 import com.conk.member.command.domain.repository.RoleRepository;
-import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.domain.repository.TenantRepository;
 import com.conk.member.command.infrastructure.service.PasswordService;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
+import com.conk.member.command.infrastructure.mail.MailService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +27,20 @@ public class CreateAdminUserCommandService {
     private final AccountRepository accountRepository;
     private final InvitationRepository invitationRepository;
     private final RoleRepository roleRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordService passwordService;
     private final MailService mailService;
 
     public CreateAdminUserCommandService(AccountRepository accountRepository,
                                          InvitationRepository invitationRepository,
                                          RoleRepository roleRepository,
+                                         TenantRepository tenantRepository,
                                          PasswordService passwordService,
                                          MailService mailService) {
         this.accountRepository = accountRepository;
         this.invitationRepository = invitationRepository;
         this.roleRepository = roleRepository;
+        this.tenantRepository = tenantRepository;
         this.passwordService = passwordService;
         this.mailService = mailService;
     }
@@ -68,7 +73,9 @@ public class CreateAdminUserCommandService {
         invitation.markPending();
         invitationRepository.save(invitation);
 
-        mailService.sendTemporaryPassword(request.getEmail(), temporaryPassword);
+        String companyName = resolveCompanyName(request.getTenantId());
+        mailService.sendInviteMail(request.getEmail(), request.getName(),
+                RoleName.MASTER_ADMIN.name(), companyName, temporaryPassword);
 
         CreateAdminUserResponse response = new CreateAdminUserResponse();
         response.setId(account.getAccountId());
@@ -90,6 +97,12 @@ public class CreateAdminUserCommandService {
     private Role getRole(RoleName roleName) {
         return roleRepository.findByRoleName(roleName)
                 .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+    }
+
+    private String resolveCompanyName(String tenantId) {
+        return tenantRepository.findById(tenantId)
+                .map(Tenant::getTenantName)
+                .orElse("");
     }
 
     private String generateId(String prefix) {

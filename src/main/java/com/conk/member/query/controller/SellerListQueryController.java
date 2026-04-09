@@ -1,8 +1,8 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.ApiResponse;
-import com.conk.member.query.dto.SellerSummary;
-import com.conk.member.query.dto.SellerListRequest;
+import com.conk.member.query.dto.request.SellerListRequest;
+import com.conk.member.query.dto.response.SellerListResponse;
 import com.conk.member.query.service.SellerListQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +19,7 @@ public class SellerListQueryController {
     }
 
     @GetMapping("/member/sellers")
-    public ApiResponse<List<SellerSummary>> getSellerList(SellerListRequest request) {
+    public ApiResponse<List<SellerListResponse>> getSellerList(SellerListRequest request) {
         return ApiResponse.ok("seller list", sellerListQueryService.getSellerList(request));
     }
 }

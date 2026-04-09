@@ -13,13 +13,15 @@ import com.conk.member.command.domain.aggregate.Invitation;
 import com.conk.member.command.domain.aggregate.Role;
 import com.conk.member.command.domain.enums.AccountStatus;
 import com.conk.member.command.domain.enums.RoleName;
+import com.conk.member.command.domain.aggregate.Tenant;
 import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.InvitationRepository;
 import com.conk.member.command.domain.repository.RoleRepository;
 import com.conk.member.command.domain.repository.SellerRepository;
-import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.domain.repository.TenantRepository;
 import com.conk.member.command.infrastructure.service.PasswordService;
 import com.conk.member.command.infrastructure.service.WarehouseService;
+import com.conk.member.command.infrastructure.mail.MailService;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ public class AccountCommandService {
     private final InvitationRepository invitationRepository;
     private final RoleRepository roleRepository;
     private final SellerRepository sellerRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordService passwordService;
     private final MailService mailService;
     private final WarehouseService warehouseService;
@@ -44,6 +47,7 @@ public class AccountCommandService {
                                  InvitationRepository invitationRepository,
                                  RoleRepository roleRepository,
                                  SellerRepository sellerRepository,
+                                 TenantRepository tenantRepository,
                                  PasswordService passwordService,
                                  MailService mailService,
                                  WarehouseService warehouseService) {
@@ -51,6 +55,7 @@ public class AccountCommandService {
         this.invitationRepository = invitationRepository;
         this.roleRepository = roleRepository;
         this.sellerRepository = sellerRepository;
+        this.tenantRepository = tenantRepository;
         this.passwordService = passwordService;
         this.mailService = mailService;
         this.warehouseService = warehouseService;
@@ -92,7 +97,9 @@ public class AccountCommandService {
         invitation.markPending();
         invitationRepository.save(invitation);
 
-        mailService.sendTemporaryPassword(request.getEmail(), temporaryPassword);
+        String inviteCompanyName = resolveCompanyName(request.getTenantId());
+        mailService.sendInviteMail(request.getEmail(), request.getName(),
+                roleName.name(), inviteCompanyName, temporaryPassword);
         return buildInviteResponse(invitedAccount, invitation, roleName.name());
     }
 
@@ -154,7 +161,9 @@ public class AccountCommandService {
         invitation.markPending();
         invitationRepository.save(invitation);
 
-        mailService.sendTemporaryPassword(request.getEmail(), temporaryPassword);
+        String adminCompanyName = resolveCompanyName(request.getTenantId());
+        mailService.sendInviteMail(request.getEmail(), request.getName(),
+                RoleName.MASTER_ADMIN.name(), adminCompanyName, temporaryPassword);
 
         CreateAdminUserResponse response = new CreateAdminUserResponse();
         response.setId(account.getAccountId());
@@ -281,6 +290,15 @@ public class AccountCommandService {
     private Account getAccount(String accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+    }
+
+    private String resolveCompanyName(String tenantId) {
+        if (!StringUtils.hasText(tenantId)) {
+            return "";
+        }
+        return tenantRepository.findById(tenantId)
+                .map(Tenant::getTenantName)
+                .orElse("");
     }
 
     private String generateId(String prefix) {

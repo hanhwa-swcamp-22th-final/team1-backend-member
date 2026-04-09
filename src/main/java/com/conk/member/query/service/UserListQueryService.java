@@ -1,8 +1,7 @@
 package com.conk.member.query.service;
 
-import com.conk.member.query.dto.UserSummary;
-import com.conk.member.query.dto.UserListRequest;
-import com.conk.member.query.dto.UserListItem;
+import com.conk.member.query.dto.request.UserListRequest;
+import com.conk.member.query.dto.response.UserListResponse;
 import com.conk.member.query.mapper.MemberUserQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +19,16 @@ public class UserListQueryService {
         this.memberUserQueryMapper = memberUserQueryMapper;
     }
 
-    public List<UserSummary> getUsers(UserListRequest request) {
-        List<UserSummary> result = new ArrayList<>();
-        for (UserListItem item : memberUserQueryMapper.findUsers(request)) {
-            result.add(toUserSummary(item));
+    public List<UserListResponse> getUsers(UserListRequest request) {
+        List<UserListResponse> result = new ArrayList<>();
+        for (UserListResponse item : memberUserQueryMapper.findUsers(request)) {
+            result.add(copy(item));
         }
         return result;
     }
 
-    private UserSummary toUserSummary(UserListItem item) {
-        UserSummary dto = new UserSummary();
+    private UserListResponse copy(UserListResponse item) {
+        UserListResponse dto = new UserListResponse();
         dto.setId(item.getId());
         dto.setName(item.getName());
         dto.setEmail(item.getEmail());

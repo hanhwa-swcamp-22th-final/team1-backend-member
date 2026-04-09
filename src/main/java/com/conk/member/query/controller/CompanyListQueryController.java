@@ -1,8 +1,8 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.AdminPayloadCompat;
-import com.conk.member.query.dto.CompanySummary;
-import com.conk.member.query.dto.CompanyListRequest;
+import com.conk.member.query.dto.request.CompanyListRequest;
+import com.conk.member.query.dto.response.CompanyListResponse;
 import com.conk.member.query.service.CompanyListQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +21,7 @@ public class CompanyListQueryController {
 
     @GetMapping("/member/admin/companies")
     public Map<String, Object> getCompanies(CompanyListRequest request) {
-        List<CompanySummary> companies = companyListQueryService.getCompanies(request);
+        List<CompanyListResponse> companies = companyListQueryService.getCompanies(request);
         return AdminPayloadCompat.items(companies);
     }
 }

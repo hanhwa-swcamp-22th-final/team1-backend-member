@@ -16,7 +16,7 @@ import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.MemberTokenRepository;
 import com.conk.member.command.domain.repository.RefreshTokenRepository;
 import com.conk.member.command.domain.repository.TenantRepository;
-import com.conk.member.command.infrastructure.service.MailService;
+import com.conk.member.command.infrastructure.mail.MailService;
 import com.conk.member.command.infrastructure.service.PasswordService;
 import com.conk.member.command.infrastructure.service.TokenService;
 import com.conk.member.common.exception.ErrorCode;
@@ -100,7 +100,11 @@ public class AuthCommandService {
         accountRepository.save(account);
 
         if (StringUtils.hasText(account.getEmail())) {
-            mailService.sendTemporaryPassword(account.getEmail(), temporaryPassword);
+            String companyName = StringUtils.hasText(account.getTenantId())
+                    ? tenantRepository.findById(account.getTenantId()).map(Tenant::getTenantName).orElse("") : "";
+            String roleName = account.getRole() != null ? account.getRole().getRoleName().name() : "";
+            mailService.sendPasswordResetMail(account.getEmail(), account.getAccountName(),
+                    roleName, companyName, temporaryPassword);
         }
 
         return buildSimpleUserStatusResponse(account);
