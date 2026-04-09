@@ -1,5 +1,7 @@
 package com.conk.member.query.service;
 
+import com.conk.member.command.domain.aggregate.SellerWarehouse;
+import com.conk.member.command.domain.repository.SellerWarehouseRepository;
 import com.conk.member.query.dto.request.SellerListRequest;
 import com.conk.member.query.dto.response.SellerListResponse;
 import com.conk.member.query.mapper.SellerQueryMapper;
@@ -14,25 +16,23 @@ import java.util.List;
 public class SellerQueryService {
 
     private final SellerQueryMapper sellerQueryMapper;
+    private final SellerWarehouseRepository sellerWarehouseRepository;
 
-    public SellerQueryService(SellerQueryMapper sellerQueryMapper) {
+    public SellerQueryService(SellerQueryMapper sellerQueryMapper,
+                              SellerWarehouseRepository sellerWarehouseRepository) {
         this.sellerQueryMapper = sellerQueryMapper;
+        this.sellerWarehouseRepository = sellerWarehouseRepository;
     }
 
-    public List<SellerListResponse> getSellerList(String tenantId, String status, String keyword) {
-        SellerListRequest request = new SellerListRequest();
-        request.setTenantId(tenantId);
-        request.setStatus(status);
-        request.setKeyword(keyword);
-
+    public List<SellerListResponse> getSellerList(SellerListRequest request) {
         List<SellerListResponse> result = new ArrayList<>();
         for (SellerListResponse item : sellerQueryMapper.findSellers(request)) {
-            result.add(copy(item));
+            result.add(toSellerListResponse(item));
         }
         return result;
     }
 
-    private SellerListResponse copy(SellerListResponse item) {
+    private SellerListResponse toSellerListResponse(SellerListResponse item) {
         SellerListResponse dto = new SellerListResponse();
         dto.setId(item.getId());
         dto.setTenantId(item.getTenantId());
@@ -44,8 +44,17 @@ public class SellerQueryService {
         dto.setPhoneNo(item.getPhoneNo());
         dto.setEmail(item.getEmail());
         dto.setCategoryName(item.getCategoryName());
+        dto.setWarehouseIds(getWarehouseIdsForSeller(item.getId()));
         dto.setStatus(item.getStatus());
         dto.setCreatedAt(item.getCreatedAt());
         return dto;
+    }
+
+    private List<String> getWarehouseIdsForSeller(String sellerId) {
+        List<String> warehouseIds = new ArrayList<>();
+        for (SellerWarehouse mapping : sellerWarehouseRepository.findBySellerIdOrderByWarehouseIdAsc(sellerId)) {
+            warehouseIds.add(mapping.getWarehouseId());
+        }
+        return warehouseIds;
     }
 }
