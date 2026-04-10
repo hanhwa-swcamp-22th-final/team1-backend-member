@@ -1,4 +1,4 @@
-package com.conk.member.command.controller;
+package com.conk.member.command.application.controller;
 
 import com.conk.member.command.application.dto.request.CreateDirectUserRequest;
 import com.conk.member.command.application.dto.response.CreateDirectUserResponse;

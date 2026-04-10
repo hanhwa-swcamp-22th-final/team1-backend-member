@@ -80,6 +80,11 @@ public class AuthService {
         this.warehouseService = warehouseService;
     }
 
+
+    public long getRefreshExpiration() {
+        return jwtTokenProvider.getRefreshExpiration();
+    }
+
     // ─── login ────────────────────────────────────────────────────────────────
 
     public LoginResponse login(LoginRequest request) {
@@ -99,11 +104,10 @@ public class AuthService {
 
     // ─── logout ───────────────────────────────────────────────────────────────
 
-    public void logout(String refreshToken) {
-        jwtTokenProvider.validateRefreshToken(refreshToken);
-        String accountId = jwtTokenProvider.getAccountIdFromJWT(refreshToken);
-        RefreshToken stored = getStoredRefreshToken(accountId);
-        validateStoredRefreshToken(stored, refreshToken);
+    public void logout(String accountId) {
+        if (!StringUtils.hasText(accountId)) {
+            throw new MemberException(ErrorCode.UNAUTHORIZED, "로그아웃할 사용자 정보를 확인할 수 없습니다.");
+        }
         refreshTokenRepository.deleteById(accountId);
     }
 

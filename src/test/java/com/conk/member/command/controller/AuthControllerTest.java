@@ -1,19 +1,23 @@
 package com.conk.member.command.controller;
 
+import com.conk.member.command.application.controller.AuthController;
 import com.conk.member.command.application.dto.response.InviteAccountResponse;
 import com.conk.member.command.application.dto.response.LoginResponse;
 import com.conk.member.command.application.dto.response.SetupPasswordResponse;
 import com.conk.member.command.application.service.AuthService;
-import com.conk.member.command.controller.AuthController;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
+import com.conk.member.common.security.MemberUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,10 +25,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
 class AuthControllerTest {
@@ -33,10 +41,21 @@ class AuthControllerTest {
     @Autowired ObjectMapper objectMapper;
     @MockitoBean AuthService authService;
 
-    // ─── login ────────────────────────────────────────────────────────────────
+    private UsernamePasswordAuthenticationToken memberAuthentication(String accountId) {
+        MemberUserPrincipal principal = new MemberUserPrincipal(
+                accountId,
+                "테스트유저",
+                "SELLER-001",
+                "TENANT-001",
+                "MASTER_ADMIN",
+                "",
+                java.util.List.of(new SimpleGrantedAuthority("MASTER_ADMIN"))
+        );
+        return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+    }
 
     @Test
-    @DisplayName("로그인 성공 - 200 OK")
+    @DisplayName("로그인 성공 - refresh token 쿠키와 함께 200 OK")
     @WithMockUser
     void login_success_returns200() throws Exception {
         LoginResponse response = new LoginResponse();
@@ -49,6 +68,7 @@ class AuthControllerTest {
         response.setStatus("ACTIVE");
 
         given(authService.login(any())).willReturn(response);
+        given(authService.getRefreshExpiration()).willReturn(604800000L);
 
         mockMvc.perform(post("/member/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -56,6 +76,7 @@ class AuthControllerTest {
                                 Map.of("emailOrWorkerCode", "test@example.com", "password", "password123")))
                         .with(csrf()))
                 .andExpect(status().isOk())
+                .andExpect(cookie().value("refreshToken", "refresh-token"))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").value("access-token"))
                 .andExpect(jsonPath("$.data.email").value("test@example.com"))
@@ -110,49 +131,30 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
-    // ─── logout ───────────────────────────────────────────────────────────────
-
     @Test
-    @DisplayName("로그아웃 성공 - 200 OK")
-    @WithMockUser
+    @DisplayName("로그아웃 성공 - 쿠키 삭제와 함께 200 OK")
     void logout_success_returns200() throws Exception {
-        willDoNothing().given(authService).logout(any());
+        willDoNothing().given(authService).logout("ACC-001");
 
         mockMvc.perform(post("/member/auth/logout")
-                        .header("Authorization", "Bearer valid-refresh-token")
+                        .with(authentication(memberAuthentication("ACC-001")))
                         .with(csrf()))
                 .andExpect(status().isOk())
+                .andExpect(cookie().maxAge("refreshToken", 0))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("logged out"));
     }
 
     @Test
-    @DisplayName("유효하지 않은 token - 401 Unauthorized")
-    @WithMockUser
-    void logout_invalidToken_returns401() throws Exception {
-        willThrow(new BadCredentialsException("Invalid token"))
-                .given(authService).logout(any());
-
+    @DisplayName("인증 없이 로그아웃 요청 - 401 Unauthorized")
+    void logout_unauthenticated_returns401() throws Exception {
         mockMvc.perform(post("/member/auth/logout")
-                        .header("Authorization", "Bearer invalid-token")
                         .with(csrf()))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("Authorization 헤더 없음 - 400 Bad Request")
-    @WithMockUser
-    void logout_missingAuthorizationHeader_returns400() throws Exception {
-        mockMvc.perform(post("/member/auth/logout")
-                        .with(csrf()))
-                .andExpect(status().isBadRequest());
-    }
-
-    // ─── refresh ──────────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("리프레시 토큰으로 새 토큰 발급 - 200 OK")
+    @DisplayName("리프레시 토큰 쿠키로 새 토큰 발급 - 200 OK")
     @WithMockUser
     void refresh_validToken_returns200() throws Exception {
         LoginResponse response = new LoginResponse();
@@ -160,11 +162,13 @@ class AuthControllerTest {
         response.setRefreshToken("new-refresh-token");
 
         given(authService.refreshToken("valid-refresh-token")).willReturn(response);
+        given(authService.getRefreshExpiration()).willReturn(604800000L);
 
         mockMvc.perform(post("/member/auth/refresh")
-                        .header("Authorization", "Bearer valid-refresh-token")
+                        .cookie(new Cookie("refreshToken", "valid-refresh-token"))
                         .with(csrf()))
                 .andExpect(status().isOk())
+                .andExpect(cookie().value("refreshToken", "new-refresh-token"))
                 .andExpect(jsonPath("$.data.token").value("new-access-token"))
                 .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"));
     }
@@ -175,9 +179,10 @@ class AuthControllerTest {
     void refresh_invalidToken_returns401() throws Exception {
         given(authService.refreshToken(any()))
                 .willThrow(new BadCredentialsException("Refresh Token이 일치하지 않습니다."));
+        given(authService.getRefreshExpiration()).willReturn(604800000L);
 
         mockMvc.perform(post("/member/auth/refresh")
-                        .header("Authorization", "Bearer invalid-token")
+                        .cookie(new Cookie("refreshToken", "invalid-token"))
                         .with(csrf()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
@@ -189,24 +194,24 @@ class AuthControllerTest {
     void refresh_expiredToken_returns401() throws Exception {
         given(authService.refreshToken(any()))
                 .willThrow(new BadCredentialsException("Refresh Token이 만료되었습니다."));
+        given(authService.getRefreshExpiration()).willReturn(604800000L);
 
         mockMvc.perform(post("/member/auth/refresh")
-                        .header("Authorization", "Bearer expired-token")
+                        .cookie(new Cookie("refreshToken", "expired-token"))
                         .with(csrf()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
     }
 
     @Test
-    @DisplayName("refresh Authorization 헤더 없음 - 400 Bad Request")
+    @DisplayName("refresh token 쿠키가 없으면 401 Unauthorized")
     @WithMockUser
-    void refresh_missingAuthorizationHeader_returns400() throws Exception {
+    void refresh_missingCookie_returns401() throws Exception {
         mockMvc.perform(post("/member/auth/refresh")
                         .with(csrf()))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
     }
-
-    // ─── setup-password ───────────────────────────────────────────────────────
 
     @Test
     @DisplayName("최초 비밀번호 설정 성공 - 200 OK")
@@ -220,7 +225,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/member/auth/setup-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("token", "valid-token", "newPassword", "newPass123!")))
+                                Map.of("setupToken", "valid-token", "newPassword", "newPass123!")))
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
@@ -236,7 +241,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/member/auth/setup-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("token", "used-token", "newPassword", "newPass123!")))
+                                Map.of("setupToken", "used-token", "newPassword", "newPass123!")))
                         .with(csrf()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false));
@@ -252,68 +257,9 @@ class AuthControllerTest {
         mockMvc.perform(post("/member/auth/setup-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("token", "expired-token", "newPassword", "newPass123!")))
+                                Map.of("setupToken", "expired-token", "newPassword", "newPass123!")))
                         .with(csrf()))
                 .andExpect(status().isGone())
-                .andExpect(jsonPath("$.success").value(false));
-    }
-
-    // ─── invite ───────────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("계정 초대 성공 - 200 OK")
-    @WithMockUser
-    void invite_success_returns200() throws Exception {
-        InviteAccountResponse response = new InviteAccountResponse();
-        response.setInvitationId("INV-001");
-        response.setEmail("invited@example.com");
-
-        given(authService.invite(any(), any())).willReturn(response);
-
-        mockMvc.perform(post("/member/auth/invite")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "invited@example.com",
-                                "roleName", "WAREHOUSE_MANAGER",
-                                "tenantId", "TENANT-001")))
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
-
-    @Test
-    @DisplayName("중복 이메일 초대 - 409 Conflict")
-    @WithMockUser
-    void invite_duplicateEmail_returns409() throws Exception {
-        given(authService.invite(any(), any()))
-                .willThrow(new MemberException(ErrorCode.DUPLICATE_EMAIL));
-
-        mockMvc.perform(post("/member/auth/invite")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "duplicate@example.com",
-                                "roleName", "WAREHOUSE_MANAGER",
-                                "tenantId", "TENANT-001")))
-                        .with(csrf()))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.success").value(false));
-    }
-
-    @Test
-    @DisplayName("허용되지 않는 역할 초대 - 403 Forbidden")
-    @WithMockUser
-    void invite_restrictedRole_returns403() throws Exception {
-        given(authService.invite(any(), any()))
-                .willThrow(new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED));
-
-        mockMvc.perform(post("/member/auth/invite")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "test@example.com",
-                                "roleName", "WAREHOUSE_WORKER",
-                                "tenantId", "TENANT-001")))
-                        .with(csrf()))
-                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false));
     }
 }

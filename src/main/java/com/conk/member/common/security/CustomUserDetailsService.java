@@ -8,7 +8,6 @@ package com.conk.member.common.security;
 import com.conk.member.command.domain.aggregate.Account;
 import com.conk.member.command.domain.repository.AccountRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,10 +29,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new UsernameNotFoundException("계정을 찾을 수 없습니다: " + accountId));
 
-        return new User(
+        return new MemberUserPrincipal(
                 account.getAccountId(),
+                account.getAccountName(),
+                account.getSellerId(),
+                account.getTenantId(),
+                account.getRole().getRoleName().name(),
                 account.getPasswordHash() != null ? account.getPasswordHash() : "",
-                Collections.singleton(new SimpleGrantedAuthority(account.getRole().getRoleName().name()))
+                Collections.singletonList(new SimpleGrantedAuthority(account.getRole().getRoleName().name()))
         );
     }
 }

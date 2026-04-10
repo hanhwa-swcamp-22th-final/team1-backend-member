@@ -139,11 +139,12 @@ public class SecurityConfig {
         "Content-Type",
         "X-Requested-With",
         "Accept",
-        "Origin"
+        "Origin",
+        "Cookie"
     ));
 
-    // JWT를 Authorization 헤더로만 보낼 거면 false가 더 안전하다
-    configuration.setAllowCredentials(false);
+    // refresh token을 HttpOnly 쿠키로 주고받기 때문에 credentials 허용이 필요하다
+    configuration.setAllowCredentials(true);
 
     configuration.setMaxAge(3600L);
 

@@ -82,26 +82,6 @@ public class JwtTokenProvider {
     return getClaims(token).getSubject();
   }
 
-  public String getRoleFromJWT(String token) {
-    return getClaims(token).get(ROLE_CLAIM, String.class);
-  }
-
-  public String getUserIdFromJWT(String token) {
-    return getClaims(token).get(USER_ID_CLAIM, String.class);
-  }
-
-  public String getUserNameFromJWT(String token) {
-    return getClaims(token).get(USER_NAME_CLAIM, String.class);
-  }
-
-  public String getSellerIdFromJWT(String token) {
-    return getClaims(token).get(SELLER_ID_CLAIM, String.class);
-  }
-
-  public String getTenantIdFromJWT(String token) {
-    return getClaims(token).get(TENANT_ID_CLAIM, String.class);
-  }
-
   public String getTokenType(String token) {
     return getClaims(token).get(TOKEN_TYPE_CLAIM, String.class);
   }

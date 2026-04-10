@@ -3,7 +3,7 @@ package com.conk.member.command.controller;
 import com.conk.member.command.application.dto.response.CreateDirectUserResponse;
 import com.conk.member.command.application.dto.response.SimpleUserStatusResponse;
 import com.conk.member.command.application.service.UserService;
-import com.conk.member.command.controller.UserController;
+import com.conk.member.command.application.controller.UserController;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
 import com.fasterxml.jackson.databind.ObjectMapper;
