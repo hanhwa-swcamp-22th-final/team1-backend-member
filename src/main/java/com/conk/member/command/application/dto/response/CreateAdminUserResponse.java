@@ -16,3 +16,4 @@ public class CreateAdminUserResponse {
     private String status;
     private String invitationId;
 }
+
