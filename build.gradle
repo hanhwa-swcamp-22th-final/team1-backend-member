@@ -26,6 +26,11 @@ repositories {
 
 dependencies {
     /**
+     * [모니터링]
+     */
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    /**
      * [보안 및 인증 - JWT & Spring Security]
      * 첫 번째 설정 유지: 사용자 인증 및 권한 관리를 담당합니다.
      */
