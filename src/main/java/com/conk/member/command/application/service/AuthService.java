@@ -88,7 +88,7 @@ public class AuthService {
     // ─── login ────────────────────────────────────────────────────────────────
 
     public LoginResponse login(LoginRequest request) {
-        Account account = findLoginAccount(request.getEmailOrWorkerCode());
+        Account account = findLoginAccount(request.getEmail());
         validatePassword(request.getPassword(), account.getPasswordHash());
         validateAccountIsActive(account);
 
@@ -284,22 +284,34 @@ public class AuthService {
         }
     }
 
+    /** 백엔드 RoleName → 프론트 ROLES 상수 매핑 */
+    private String toFrontendRole(RoleName roleName) {
+        return switch (roleName) {
+            case WAREHOUSE_MANAGER -> "WH_MANAGER";
+            case WAREHOUSE_WORKER  -> "WH_WORKER";
+            default                -> roleName.name();
+        };
+    }
+
     private LoginResponse buildLoginResponse(Account account, String accessToken, String refreshToken) {
+        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
+        userInfo.setId(account.getAccountId());
+        userInfo.setEmail(account.getEmail());
+        userInfo.setName(account.getAccountName());
+        userInfo.setRole(toFrontendRole(account.getRole().getRoleName()));
+        userInfo.setStatus(account.getAccountStatus().name());
+        userInfo.setTenantId(account.getTenantId());
+        userInfo.setSellerId(account.getSellerId());
+        userInfo.setWarehouseId(account.getWarehouseId());
+        if (StringUtils.hasText(account.getTenantId())) {
+            tenantRepository.findById(account.getTenantId())
+                    .ifPresent(tenant -> userInfo.setOrganization(tenant.getTenantName()));
+        }
+
         LoginResponse response = new LoginResponse();
         response.setToken(accessToken);
         response.setRefreshToken(refreshToken);
-        response.setId(account.getAccountId());
-        response.setEmail(account.getEmail());
-        response.setName(account.getAccountName());
-        response.setRole(account.getRole().getRoleName().name());
-        response.setStatus(account.getAccountStatus().name());
-        response.setTenantId(account.getTenantId());
-        response.setSellerId(account.getSellerId());
-        response.setWarehouseId(account.getWarehouseId());
-        if (StringUtils.hasText(account.getTenantId())) {
-            tenantRepository.findById(account.getTenantId())
-                    .ifPresent(tenant -> response.setTenantName(tenant.getTenantName()));
-        }
+        response.setUser(userInfo);
         return response;
     }
 

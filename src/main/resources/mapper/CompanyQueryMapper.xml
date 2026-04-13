@@ -65,21 +65,17 @@
                 FROM account a
                 WHERE a.tenant_id = t.tenant_id
             ) AS user_count,
-            (
-                SELECT COUNT(*)
-                FROM (
-                    SELECT DISTINCT a2.warehouse_id
-                    FROM account a2
-                    WHERE a2.tenant_id = t.tenant_id
-                      AND a2.warehouse_id IS NOT NULL
-                    UNION
-                    SELECT DISTINCT sw.warehouse_id
-                    FROM seller_warehouse sw
-                    WHERE sw.tenant_id = t.tenant_id
-                      AND sw.warehouse_id IS NOT NULL
-                ) warehouse_union
-            ) AS warehouse_count
+            COALESCE(wc.warehouse_count, 0) AS warehouse_count
         FROM tenant t
+        LEFT JOIN (
+            SELECT tenant_id, COUNT(DISTINCT warehouse_id) AS warehouse_count
+            FROM (
+                SELECT tenant_id, warehouse_id FROM account         WHERE warehouse_id IS NOT NULL
+                UNION
+                SELECT tenant_id, warehouse_id FROM seller_warehouse WHERE warehouse_id IS NOT NULL
+            ) all_wh
+            GROUP BY tenant_id
+        ) wc ON wc.tenant_id = t.tenant_id
         <where>
             <if test="status != null and status != ''">
                 t.status = #{status}

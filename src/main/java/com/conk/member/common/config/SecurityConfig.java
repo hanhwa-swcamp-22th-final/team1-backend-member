@@ -43,6 +43,8 @@ public class SecurityConfig {
   private static final List<String> ALLOWED_ORIGINS = List.of(
       "http://localhost:3000",
       "http://127.0.0.1:3000",
+      "http://localhost:5173",    // 개발 환경 Vite dev server
+      "http://127.0.0.1:5173",
       "https://your-frontend-domain.com"
   );
 
@@ -84,11 +86,15 @@ public class SecurityConfig {
         .accessDeniedHandler(restAccessDeniedHandler)
     );
 
-    http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+    // CORS는 Nginx(API Gateway)에서 처리 — Spring Security CORS 비활성화
+    http.cors(AbstractHttpConfigurer::disable);
 
     http.authorizeHttpRequests(auth -> auth
         // 브라우저 preflight 요청 허용
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+        // 헬스체크 (Docker healthcheck + 모니터링)
+        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
 
         // 인증 없이 허용할 API
         .requestMatchers(

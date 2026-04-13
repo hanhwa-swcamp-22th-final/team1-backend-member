@@ -23,11 +23,40 @@ spring:
     # 로컬 직접 실행: localhost:9094
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
 
+jwt:
+  # Docker: JWT_SECRET 환경변수로 주입
+  # 로컬 직접 실행: 아래 개발 전용 예시 키 사용 (원문: "conk-development-secret-key-at-least-32-bytes!!")
+  secret: ${JWT_SECRET:conk-development-secret-key-at-least-32-bytes!!"}
+  expiration: ${JWT_EXPIRATION:3600000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+app:
+  mail:
+    from-name: ${MAIL_FROM_NAME:CONK Fulfillment Platform}
+    login-url: ${MAIL_LOGIN_URL:http://localhost:3000/login}
+    service-name: ${MAIL_SERVICE_NAME:CONK}
+    setup-base-url: ${MAIL_SETUP_BASE_URL:http://localhost:3000/member/setup-password}
 management:
   endpoints:
     web:

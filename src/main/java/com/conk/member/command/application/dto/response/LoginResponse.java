@@ -10,13 +10,20 @@ import lombok.Setter;
 public class LoginResponse {
     private String token;
     private String refreshToken;
-    private String id;
-    private String email;
-    private String name;
-    private String role;
-    private String status;
-    private String tenantId;
-    private String tenantName;
-    private String sellerId;
-    private String warehouseId;
+    private UserInfo user;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class UserInfo {
+        private String id;
+        private String name;
+        private String email;
+        private String role;
+        private String status;
+        private String organization;  // tenantName 매핑
+        private String tenantId;
+        private String sellerId;
+        private String warehouseId;
+    }
 }

@@ -29,7 +29,7 @@ public class RefreshToken {
     @Column(name = "account_id", nullable = false)
     private String accountId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 2048)
     private String token;
 
     @Column(name = "expiry_date", nullable = false)

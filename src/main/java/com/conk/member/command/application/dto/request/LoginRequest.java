@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class LoginRequest {
-    private String emailOrWorkerCode;
+    private String email;         // 이메일 또는 작업자 코드 (프론트 필드명 email 통일)
     private String password;
 }
