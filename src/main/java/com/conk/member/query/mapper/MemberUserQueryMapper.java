@@ -5,16 +5,16 @@ package com.conk.member.query.mapper;
  * MEM-006(소속 사용자), MEM-016(관리자용 사용자) 대응.
  */
 
-import com.conk.member.query.dto.AdminUserListRequest;
-import com.conk.member.query.dto.UserListRequest;
-import com.conk.member.query.dto.AdminUserListItem;
-import com.conk.member.query.dto.UserListItem;
+import com.conk.member.query.dto.request.AdminUserListRequest;
+import com.conk.member.query.dto.request.UserListRequest;
+import com.conk.member.query.dto.response.AdminUserListResponse;
+import com.conk.member.query.dto.response.UserListResponse;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 
 @Mapper
 public interface MemberUserQueryMapper {
-    List<UserListItem> findUsers(UserListRequest request);
-    List<AdminUserListItem> findAdminUsers(AdminUserListRequest request);
+    List<UserListResponse> findUsers(UserListRequest request);
+    List<AdminUserListResponse> findAdminUsers(AdminUserListRequest request);
 }

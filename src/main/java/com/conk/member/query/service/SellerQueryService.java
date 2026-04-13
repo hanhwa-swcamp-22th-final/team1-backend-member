@@ -1,8 +1,9 @@
 package com.conk.member.query.service;
 
-import com.conk.member.query.dto.SellerSummary;
-import com.conk.member.query.dto.SellerListRequest;
-import com.conk.member.query.dto.SellerListItem;
+import com.conk.member.command.domain.aggregate.SellerWarehouse;
+import com.conk.member.command.domain.repository.SellerWarehouseRepository;
+import com.conk.member.query.dto.request.SellerListRequest;
+import com.conk.member.query.dto.response.SellerListResponse;
 import com.conk.member.query.mapper.SellerQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,26 +16,24 @@ import java.util.List;
 public class SellerQueryService {
 
     private final SellerQueryMapper sellerQueryMapper;
+    private final SellerWarehouseRepository sellerWarehouseRepository;
 
-    public SellerQueryService(SellerQueryMapper sellerQueryMapper) {
+    public SellerQueryService(SellerQueryMapper sellerQueryMapper,
+                              SellerWarehouseRepository sellerWarehouseRepository) {
         this.sellerQueryMapper = sellerQueryMapper;
+        this.sellerWarehouseRepository = sellerWarehouseRepository;
     }
 
-    public List<SellerSummary> getSellerList(String tenantId, String status, String keyword) {
-        SellerListRequest request = new SellerListRequest();
-        request.setTenantId(tenantId);
-        request.setStatus(status);
-        request.setKeyword(keyword);
-
-        List<SellerSummary> result = new ArrayList<>();
-        for (SellerListItem item : sellerQueryMapper.findSellers(request)) {
-            result.add(toSellerSummary(item));
+    public List<SellerListResponse> getSellerList(SellerListRequest request) {
+        List<SellerListResponse> result = new ArrayList<>();
+        for (SellerListResponse item : sellerQueryMapper.findSellers(request)) {
+            result.add(toSellerListResponse(item));
         }
         return result;
     }
 
-    private SellerSummary toSellerSummary(SellerListItem item) {
-        SellerSummary dto = new SellerSummary();
+    private SellerListResponse toSellerListResponse(SellerListResponse item) {
+        SellerListResponse dto = new SellerListResponse();
         dto.setId(item.getId());
         dto.setTenantId(item.getTenantId());
         dto.setCustomerCode(item.getCustomerCode());
@@ -45,8 +44,17 @@ public class SellerQueryService {
         dto.setPhoneNo(item.getPhoneNo());
         dto.setEmail(item.getEmail());
         dto.setCategoryName(item.getCategoryName());
+        dto.setWarehouseIds(getWarehouseIdsForSeller(item.getId()));
         dto.setStatus(item.getStatus());
         dto.setCreatedAt(item.getCreatedAt());
         return dto;
+    }
+
+    private List<String> getWarehouseIdsForSeller(String sellerId) {
+        List<String> warehouseIds = new ArrayList<>();
+        for (SellerWarehouse mapping : sellerWarehouseRepository.findBySellerIdOrderByWarehouseIdAsc(sellerId)) {
+            warehouseIds.add(mapping.getWarehouseId());
+        }
+        return warehouseIds;
     }
 }

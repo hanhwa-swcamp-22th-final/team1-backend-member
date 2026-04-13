@@ -4,8 +4,8 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.conk.member.query.mapper.SellerQueryMapper">
 
-    <select id="findSellers" parameterType="com.conk.member.query.dto.SellerListRequest"
-            resultType="com.conk.member.query.dto.SellerListItem">
+    <select id="findSellers" parameterType="com.conk.member.query.dto.request.SellerListRequest"
+            resultType="com.conk.member.query.dto.response.SellerListResponse">
         SELECT
             s.seller_id AS id,
             s.tenant_id AS tenant_id,

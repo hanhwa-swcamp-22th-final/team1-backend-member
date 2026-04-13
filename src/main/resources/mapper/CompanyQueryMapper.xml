@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.conk.member.query.mapper.CompanyQueryMapper">
 
-    <resultMap id="companyListItemMap" type="com.conk.member.query.dto.CompanyListItem">
+    <resultMap id="companyListItemMap" type="com.conk.member.query.dto.response.CompanyListResponse">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="tenantCode" column="tenant_code"/>
@@ -22,7 +22,7 @@
         <result property="userCount" column="user_count"/>
     </resultMap>
 
-    <resultMap id="companyDetailItemMap" type="com.conk.member.query.dto.CompanyDetailItem">
+    <resultMap id="companyDetailItemMap" type="com.conk.member.query.dto.response.CompanyDetailResponse">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="tenantCode" column="tenant_code"/>
@@ -40,7 +40,7 @@
     </resultMap>
 
     <select id="findCompanies"
-            parameterType="com.conk.member.query.dto.CompanyListRequest"
+            parameterType="com.conk.member.query.dto.request.CompanyListRequest"
             resultMap="companyListItemMap">
         SELECT
             t.tenant_id AS id,

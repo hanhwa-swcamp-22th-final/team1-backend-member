@@ -5,6 +5,7 @@ package com.conk.member.command.domain.aggregate;
  * 이용 창고 목록은 외부 창고 서비스 MSA 참조 전제를 따른다.
  */
 
+import com.conk.member.command.domain.enums.SellerStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,8 +38,9 @@ public class Seller extends BaseAuditEntity {
     private String email;
     @Column(name = "category_name")
     private String categoryName;
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private SellerStatus status;
     @Column(name = "customer_code", nullable = false, unique = true)
     private String customerCode;
 }

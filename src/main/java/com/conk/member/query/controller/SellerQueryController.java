@@ -1,28 +1,27 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.ApiResponse;
-import com.conk.member.query.dto.QueryResponses;
-import com.conk.member.query.service.MemberQueryService;
+import com.conk.member.query.dto.request.SellerListRequest;
+import com.conk.member.query.dto.response.SellerListResponse;
+import com.conk.member.query.service.SellerQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("/member/sellers")
 public class SellerQueryController {
 
-    private final MemberQueryService memberQueryService;
+    private final SellerQueryService sellerQueryService;
 
-    public SellerQueryController(MemberQueryService memberQueryService) {
-        this.memberQueryService = memberQueryService;
+    public SellerQueryController(SellerQueryService sellerQueryService) {
+        this.sellerQueryService = sellerQueryService;
     }
 
-    @GetMapping("/member/sellers")
-    public ApiResponse<List<QueryResponses.SellerSummary>> getSellerList(
-            @RequestParam(required = false) String tenantId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok("seller list", memberQueryService.getSellerList(tenantId, status, keyword));
+    @GetMapping
+    public ApiResponse<List<SellerListResponse>> getSellerList(SellerListRequest request) {
+        return ApiResponse.ok("seller list", sellerQueryService.getSellerList(request));
     }
 }

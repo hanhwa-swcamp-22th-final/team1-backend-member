@@ -1,34 +1,27 @@
 package com.conk.member.query.controller;
 
 import com.conk.member.common.util.ApiResponse;
-import com.conk.member.query.dto.QueryResponses;
-import com.conk.member.query.service.MemberQueryService;
+import com.conk.member.query.dto.request.UserListRequest;
+import com.conk.member.query.dto.response.UserListResponse;
+import com.conk.member.query.service.UserQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("/member/users")
 public class UserQueryController {
 
-    private final MemberQueryService memberQueryService;
+    private final UserQueryService userQueryService;
 
-    public UserQueryController(MemberQueryService memberQueryService) {
-        this.memberQueryService = memberQueryService;
+    public UserQueryController(UserQueryService userQueryService) {
+        this.userQueryService = userQueryService;
     }
 
-    @GetMapping("/member/users")
-    public ApiResponse<List<QueryResponses.UserSummary>> getUsers(
-            @RequestParam(required = false) String tenantId,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) String accountStatus,
-            @RequestParam(required = false) String sellerId,
-            @RequestParam(required = false) String warehouseId,
-            @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(
-                "user list",
-                memberQueryService.getUsers(tenantId, role, accountStatus, sellerId, warehouseId, keyword)
-        );
+    @GetMapping
+    public ApiResponse<List<UserListResponse>> getUsers(UserListRequest request) {
+        return ApiResponse.ok("user list", userQueryService.getUsers(request));
     }
 }

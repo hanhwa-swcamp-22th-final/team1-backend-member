@@ -5,9 +5,9 @@ package com.conk.member.query.mapper;
  * MEM-019(권한 매트릭스), MEM-021(이력) 대응.
  */
 
-import com.conk.member.query.dto.PermissionHistoryRequest;
-import com.conk.member.query.dto.RolePermissionHistoryItem;
-import com.conk.member.query.dto.RolePermissionMatrixRow;
+import com.conk.member.query.dto.request.PermissionHistoryRequest;
+import com.conk.member.query.dto.response.PermissionHistoryResponse;
+import com.conk.member.query.dto.response.RolePermissionMatrixRowResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,6 +15,6 @@ import java.util.List;
 
 @Mapper
 public interface RolePermissionQueryMapper {
-  List<RolePermissionMatrixRow> findRolePermissions(@Param("roleId") String roleId);
-  List<RolePermissionHistoryItem> findRolePermissionHistory(PermissionHistoryRequest request);
+    List<RolePermissionMatrixRowResponse> findRolePermissions(@Param("roleId") String roleId);
+    List<PermissionHistoryResponse> findRolePermissionHistory(PermissionHistoryRequest request);
 }

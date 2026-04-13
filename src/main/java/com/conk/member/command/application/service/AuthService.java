@@ -1,0 +1,342 @@
+package com.conk.member.command.application.service;
+
+import com.conk.member.command.application.dto.request.InviteAccountRequest;
+import com.conk.member.command.application.dto.request.LoginRequest;
+import com.conk.member.command.application.dto.request.SetupPasswordRequest;
+import com.conk.member.command.application.dto.response.InviteAccountResponse;
+import com.conk.member.command.application.dto.response.LoginResponse;
+import com.conk.member.command.application.dto.response.SetupPasswordResponse;
+import com.conk.member.command.domain.aggregate.Account;
+import com.conk.member.command.domain.aggregate.Invitation;
+import com.conk.member.command.domain.aggregate.MemberToken;
+import com.conk.member.command.domain.aggregate.RefreshToken;
+import com.conk.member.command.domain.aggregate.Role;
+import com.conk.member.command.domain.aggregate.Tenant;
+import com.conk.member.command.domain.enums.AccountStatus;
+import com.conk.member.command.domain.enums.RoleName;
+import com.conk.member.command.domain.enums.TenantStatus;
+import com.conk.member.command.domain.repository.AccountRepository;
+import com.conk.member.command.domain.repository.InvitationRepository;
+import com.conk.member.command.domain.repository.MemberTokenRepository;
+import com.conk.member.command.domain.repository.RefreshTokenRepository;
+import com.conk.member.command.domain.repository.RoleRepository;
+import com.conk.member.command.domain.repository.SellerRepository;
+import com.conk.member.command.domain.repository.TenantRepository;
+import com.conk.member.command.infrastructure.mail.MailService;
+import com.conk.member.command.infrastructure.service.PasswordService;
+import com.conk.member.command.infrastructure.service.TokenService;
+import com.conk.member.command.infrastructure.service.WarehouseService;
+import com.conk.member.common.exception.ErrorCode;
+import com.conk.member.common.exception.MemberException;
+import com.conk.member.common.jwt.JwtTokenProvider;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.util.Date;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class AuthService {
+
+    private final AccountRepository accountRepository;
+    private final SellerRepository sellerRepository;
+    private final InvitationRepository invitationRepository;
+    private final RoleRepository roleRepository;
+    private final TenantRepository tenantRepository;
+    private final MemberTokenRepository memberTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordService passwordService;
+    private final TokenService tokenService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final MailService mailService;
+    private final WarehouseService warehouseService;
+
+    public AuthService(AccountRepository accountRepository,
+                       SellerRepository sellerRepository,
+                       InvitationRepository invitationRepository,
+                       RoleRepository roleRepository,
+                       TenantRepository tenantRepository,
+                       MemberTokenRepository memberTokenRepository,
+                       RefreshTokenRepository refreshTokenRepository,
+                       PasswordService passwordService,
+                       TokenService tokenService,
+                       JwtTokenProvider jwtTokenProvider,
+                       MailService mailService,
+                       WarehouseService warehouseService) {
+        this.accountRepository = accountRepository;
+        this.sellerRepository = sellerRepository;
+        this.invitationRepository = invitationRepository;
+        this.roleRepository = roleRepository;
+        this.tenantRepository = tenantRepository;
+        this.memberTokenRepository = memberTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.passwordService = passwordService;
+        this.tokenService = tokenService;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.mailService = mailService;
+        this.warehouseService = warehouseService;
+    }
+
+
+    public long getRefreshExpiration() {
+        return jwtTokenProvider.getRefreshExpiration();
+    }
+
+    // ─── login ────────────────────────────────────────────────────────────────
+
+    public LoginResponse login(LoginRequest request) {
+        Account account = findLoginAccount(request.getEmailOrWorkerCode());
+        validatePassword(request.getPassword(), account.getPasswordHash());
+        validateAccountIsActive(account);
+
+        account.successLogin();
+        accountRepository.save(account);
+
+        String accessToken = jwtTokenProvider.createToken(account);
+        String refreshToken = jwtTokenProvider.createRefreshToken(account);
+        saveRefreshToken(account.getAccountId(), refreshToken);
+
+        return buildLoginResponse(account, accessToken, refreshToken);
+    }
+
+    // ─── logout ───────────────────────────────────────────────────────────────
+
+    public void logout(String accountId) {
+        if (!StringUtils.hasText(accountId)) {
+            throw new MemberException(ErrorCode.UNAUTHORIZED, "로그아웃할 사용자 정보를 확인할 수 없습니다.");
+        }
+        refreshTokenRepository.deleteById(accountId);
+    }
+
+    // ─── refresh ──────────────────────────────────────────────────────────────
+
+    public LoginResponse refreshToken(String providedRefreshToken) {
+        jwtTokenProvider.validateRefreshToken(providedRefreshToken);
+        String accountId = jwtTokenProvider.getAccountIdFromJWT(providedRefreshToken);
+        RefreshToken stored = getStoredRefreshToken(accountId);
+        validateStoredRefreshToken(stored, providedRefreshToken);
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+
+        String newAccessToken = jwtTokenProvider.createToken(account);
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(account);
+        saveRefreshToken(account.getAccountId(), newRefreshToken);
+
+        return buildLoginResponse(account, newAccessToken, newRefreshToken);
+    }
+
+    // ─── invite ───────────────────────────────────────────────────────────────
+
+    public InviteAccountResponse invite(InviteAccountRequest request, String inviterAccountId) {
+        RoleName roleName = parseRoleName(request.getRole());
+        if (!StringUtils.hasText(inviterAccountId)) {
+            throw new MemberException(ErrorCode.UNAUTHORIZED, "초대 요청자를 확인할 수 없습니다.");
+        }
+        validateInviteRole(roleName);
+        validateDuplicateEmail(request.getEmail());
+        validateInviteReference(roleName, request);
+
+        Role role = getRole(roleName);
+        String temporaryPassword = passwordService.generateTemporaryPassword();
+
+        Account invitedAccount = new Account();
+        invitedAccount.setAccountId(generateId("ACC"));
+        invitedAccount.setRole(role);
+        invitedAccount.setTenantId(request.getTenantId());
+        invitedAccount.setSellerId(request.getSellerId());
+        invitedAccount.setWarehouseId(request.getWarehouseId());
+        invitedAccount.setAccountName(request.getName());
+        invitedAccount.setEmail(request.getEmail());
+        invitedAccount.applyTemporaryPassword(passwordService.encode(temporaryPassword));
+        accountRepository.save(invitedAccount);
+
+        Invitation invitation = new Invitation();
+        invitation.setInvitationId(generateId("INV"));
+        invitation.setInviterAccountId(inviterAccountId);
+        invitation.setInviteeAccountId(invitedAccount.getAccountId());
+        invitation.setTargetRoleId(role.getRoleId());
+        invitation.setTenantId(request.getTenantId());
+        invitation.setSellerId(request.getSellerId());
+        invitation.setWarehouseId(request.getWarehouseId());
+        invitation.setInviteEmail(request.getEmail());
+        invitation.markPending();
+        invitationRepository.save(invitation);
+
+        String companyName = resolveCompanyName(request.getTenantId());
+        mailService.sendInviteMail(request.getEmail(), request.getName(),
+                roleName.name(), companyName, temporaryPassword);
+
+        return buildInviteResponse(invitedAccount, invitation, roleName.name());
+    }
+
+    // ─── setupPassword ────────────────────────────────────────────────────────
+
+    public SetupPasswordResponse setupPassword(SetupPasswordRequest request) {
+        String tokenHash = tokenService.hash(request.getSetupToken());
+        MemberToken memberToken = memberTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new MemberException(ErrorCode.UNAUTHORIZED));
+
+        validateSetupToken(memberToken);
+
+        Account account = accountRepository.findById(memberToken.getAccountId())
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+        account.changePassword(passwordService.encode(request.getNewPassword()));
+        accountRepository.save(account);
+
+        memberToken.use();
+        memberTokenRepository.save(memberToken);
+
+        return buildSetupPasswordResponse(account);
+    }
+
+    // ─── private helpers ──────────────────────────────────────────────────────
+
+    private Account findLoginAccount(String emailOrWorkerCode) {
+        return accountRepository.findByEmail(emailOrWorkerCode)
+                .or(() -> accountRepository.findByWorkerCode(emailOrWorkerCode))
+                .orElseThrow(() -> new MemberException(ErrorCode.INVALID_CREDENTIALS));
+    }
+
+    private void validatePassword(String rawPassword, String encodedPassword) {
+        if (!passwordService.matches(rawPassword, encodedPassword)) {
+            throw new MemberException(ErrorCode.INVALID_CREDENTIALS);
+        }
+    }
+
+    private void validateAccountIsActive(Account account) {
+        if (account.getAccountStatus() == AccountStatus.INACTIVE) {
+            throw new MemberException(ErrorCode.FORBIDDEN, "비활성화된 계정입니다.");
+        }
+    }
+
+    private void saveRefreshToken(String accountId, String refreshToken) {
+        RefreshToken token = RefreshToken.builder()
+                .accountId(accountId)
+                .token(refreshToken)
+                .expiryDate(new Date(System.currentTimeMillis() + jwtTokenProvider.getRefreshExpiration()))
+                .build();
+        refreshTokenRepository.save(token);
+    }
+
+    private RefreshToken getStoredRefreshToken(String accountId) {
+        return refreshTokenRepository.findById(accountId)
+                .orElseThrow(() -> new BadCredentialsException("Refresh Token을 찾을 수 없습니다."));
+    }
+
+    private void validateStoredRefreshToken(RefreshToken stored, String provided) {
+        if (!stored.getToken().equals(provided)) {
+            throw new BadCredentialsException("Refresh Token이 일치하지 않습니다.");
+        }
+        if (stored.getExpiryDate().before(new Date())) {
+            throw new BadCredentialsException("Refresh Token이 만료되었습니다.");
+        }
+    }
+
+    private void validateInviteRole(RoleName roleName) {
+        if (roleName != RoleName.WAREHOUSE_MANAGER && roleName != RoleName.SELLER) {
+            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WAREHOUSE_MANAGER/SELLER 초대만 허용합니다.");
+        }
+    }
+
+    private void validateDuplicateEmail(String email) {
+        if (accountRepository.existsByEmail(email)) {
+            throw new MemberException(ErrorCode.DUPLICATE_EMAIL);
+        }
+    }
+
+    private void validateInviteReference(RoleName roleName, InviteAccountRequest request) {
+        if (roleName == RoleName.WAREHOUSE_MANAGER && !warehouseService.exists(request.getWarehouseId())) {
+            throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 창고입니다.");
+        }
+        if (roleName == RoleName.SELLER && sellerRepository.findById(request.getSellerId()).isEmpty()) {
+            throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 셀러입니다.");
+        }
+    }
+
+    private void validateSetupToken(MemberToken memberToken) {
+        if (Boolean.TRUE.equals(memberToken.getIsUsed())) {
+            throw new MemberException(ErrorCode.TOKEN_ALREADY_USED);
+        }
+        if (memberToken.isExpired()) {
+            throw new MemberException(ErrorCode.TOKEN_EXPIRED);
+        }
+    }
+
+    private Role getRole(RoleName roleName) {
+        return roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+    }
+
+    private String resolveCompanyName(String tenantId) {
+        if (!StringUtils.hasText(tenantId)) return "";
+        return tenantRepository.findById(tenantId).map(Tenant::getTenantName).orElse("");
+    }
+
+    private RoleName parseRoleName(String roleName) {
+        try {
+            return RoleName.valueOf(roleName);
+        } catch (IllegalArgumentException e) {
+            throw new MemberException(ErrorCode.BAD_REQUEST, "유효하지 않은 역할입니다.");
+        }
+    }
+
+    private LoginResponse buildLoginResponse(Account account, String accessToken, String refreshToken) {
+        LoginResponse response = new LoginResponse();
+        response.setToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        response.setId(account.getAccountId());
+        response.setEmail(account.getEmail());
+        response.setName(account.getAccountName());
+        response.setRole(account.getRole().getRoleName().name());
+        response.setStatus(account.getAccountStatus().name());
+        response.setTenantId(account.getTenantId());
+        response.setSellerId(account.getSellerId());
+        response.setWarehouseId(account.getWarehouseId());
+        if (StringUtils.hasText(account.getTenantId())) {
+            tenantRepository.findById(account.getTenantId())
+                    .ifPresent(tenant -> response.setTenantName(tenant.getTenantName()));
+        }
+        return response;
+    }
+
+    private InviteAccountResponse buildInviteResponse(Account account, Invitation invitation, String roleName) {
+        InviteAccountResponse response = new InviteAccountResponse();
+        response.setInvitationId(invitation.getInvitationId());
+        response.setRole(roleName);
+        response.setTenantId(invitation.getTenantId());
+        response.setSellerId(invitation.getSellerId());
+        response.setWarehouseId(invitation.getWarehouseId());
+        response.setName(account.getAccountName());
+        response.setEmail(invitation.getInviteEmail());
+        response.setInviteStatus(invitation.getInviteStatus().name());
+        response.setInviteSentAt(invitation.getInviteSentAt());
+        return response;
+    }
+
+    private SetupPasswordResponse buildSetupPasswordResponse(Account account) {
+        SetupPasswordResponse response = new SetupPasswordResponse();
+        response.setAccountId(account.getAccountId());
+        response.setAccountStatus(account.getAccountStatus().name());
+        response.setPasswordChangedAt(account.getPasswordChangedAt());
+
+        if (account.isRole(RoleName.MASTER_ADMIN) && StringUtils.hasText(account.getTenantId())) {
+            Tenant tenant = tenantRepository.findById(account.getTenantId())
+                    .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+            if (tenant.getStatus() == TenantStatus.SETTING) {
+                tenant.activate();
+                tenantRepository.save(tenant);
+            }
+            response.setTenantStatus(tenant.getStatus().name());
+            response.setActivatedAt(tenant.getActivatedAt());
+        }
+        return response;
+    }
+
+    private String generateId(String prefix) {
+        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+}

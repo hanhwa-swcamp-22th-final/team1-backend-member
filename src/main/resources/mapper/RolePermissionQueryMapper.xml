@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.conk.member.query.mapper.RolePermissionQueryMapper">
 
-    <resultMap id="rolePermissionMatrixRowMap" type="com.conk.member.query.dto.RolePermissionMatrixRow">
+    <resultMap id="rolePermissionMatrixRowMap" type="com.conk.member.query.dto.response.RolePermissionMatrixRowResponse">
         <result property="roleId" column="role_id"/>
         <result property="roleName" column="role_name"/>
         <result property="permissionId" column="permission_id"/>
@@ -17,7 +17,7 @@
         <result property="changedAt" column="changed_at"/>
     </resultMap>
 
-    <resultMap id="rolePermissionHistoryItemMap" type="com.conk.member.query.dto.RolePermissionHistoryItem">
+    <resultMap id="rolePermissionHistoryItemMap" type="com.conk.member.query.dto.response.PermissionHistoryResponse">
         <result property="historyId" column="history_id"/>
         <result property="rolePermissionId" column="role_permission_id"/>
         <result property="beforeIsEnabled" column="before_is_enabled"/>
@@ -60,7 +60,7 @@
 
     <!--suppress SqlNoDataSourceInspection, SqlResolve -->
     <select id="findRolePermissionHistory"
-            parameterType="com.conk.member.query.dto.PermissionHistoryRequest"
+            parameterType="com.conk.member.query.dto.request.PermissionHistoryRequest"
             resultMap="rolePermissionHistoryItemMap">
         SELECT
             history_id,

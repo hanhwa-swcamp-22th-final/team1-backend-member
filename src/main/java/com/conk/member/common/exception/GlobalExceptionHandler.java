@@ -6,8 +6,11 @@ package com.conk.member.common.exception;
  */
 
 import com.conk.member.common.util.ApiResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -26,6 +29,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(exception.getErrorCode().getStatus())
                 .body(ApiResponse.fail(exception.getMessage(), body));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleBadCredentialsException(BadCredentialsException exception) {
+        Map<String, Object> body = createErrorBody(ErrorCode.INVALID_CREDENTIALS.getCode(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail(exception.getMessage(), body));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleMissingRequestHeaderException(MissingRequestHeaderException exception) {
+        Map<String, Object> body = createErrorBody(ErrorCode.BAD_REQUEST.getCode(), exception.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.fail(ErrorCode.BAD_REQUEST.getMessage(), body));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

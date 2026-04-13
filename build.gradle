@@ -59,7 +59,7 @@ dependencies {
     // Spring Data JPA: 객체 지향적으로 DB 데이터를 관리 (ORM)
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     // MySQL Connector: 자바와 MySQL 데이터베이스를 연결하는 드라이버 (두 번째 설정값 반영)
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    implementation 'org.mariadb.jdbc:mariadb-java-client'
     // MyBatis: SQL 쿼리를 직접 제어할 수 있는 매퍼 프레임워크 (첫 번째 설정 유지)
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
 
@@ -74,6 +74,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     // DevTools: 코드 수정 시 서버 자동 재시작 등 개발 편의 기능 제공
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    // Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     /**
      * [테스트 도구]
