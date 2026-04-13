@@ -248,6 +248,7 @@ public class AuthService {
         }
     }
 
+    
     private void validateInviteReference(RoleName roleName, InviteAccountRequest request) {
         if (roleName == RoleName.WAREHOUSE_MANAGER && !warehouseService.exists(request.getWarehouseId())) {
             throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 창고입니다.");
