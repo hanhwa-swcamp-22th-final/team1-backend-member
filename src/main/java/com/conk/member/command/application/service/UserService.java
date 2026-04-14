@@ -60,7 +60,7 @@ public class UserService {
             throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 창고입니다.");
         }
 
-        Role role = getRole(RoleName.WAREHOUSE_WORKER);
+        Role role = getRole(RoleName.WH_WORKER);
         Account account = new Account();
         account.setAccountId(generateId("ACC"));
         account.setRole(role);

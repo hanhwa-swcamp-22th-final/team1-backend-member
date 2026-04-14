@@ -35,7 +35,7 @@ class RolePermissionRepositoryTest {
     void setUp() {
         Role role = new Role();
         role.setRoleId(ROLE_ID);
-        role.setRoleName(RoleName.WAREHOUSE_MANAGER);
+        role.setRoleName(RoleName.WH_MANAGER);
         role.setRoleDescription("창고관리자");
         role.setCreatedBy("system");
         role.setUpdatedBy("system");

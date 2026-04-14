@@ -237,8 +237,8 @@ public class AuthService {
     }
 
     private void validateInviteRole(RoleName roleName) {
-        if (roleName != RoleName.WAREHOUSE_MANAGER && roleName != RoleName.SELLER) {
-            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WAREHOUSE_MANAGER/SELLER 초대만 허용합니다.");
+        if (roleName != RoleName.WH_MANAGER && roleName != RoleName.SELLER) {
+            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WH_MANAGER/SELLER 초대만 허용합니다.");
         }
     }
 
@@ -250,7 +250,7 @@ public class AuthService {
 
     
     private void validateInviteReference(RoleName roleName, InviteAccountRequest request) {
-        if (roleName == RoleName.WAREHOUSE_MANAGER && !warehouseService.exists(request.getWarehouseId())) {
+        if (roleName == RoleName.WH_MANAGER && !warehouseService.exists(request.getWarehouseId())) {
             throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 창고입니다.");
         }
         if (roleName == RoleName.SELLER && sellerRepository.findById(request.getSellerId()).isEmpty()) {
@@ -279,19 +279,10 @@ public class AuthService {
 
     private RoleName parseRoleName(String roleName) {
         try {
-            return RoleName.valueOf(roleName);
+            return RoleName.fromValue(roleName);
         } catch (IllegalArgumentException e) {
             throw new MemberException(ErrorCode.BAD_REQUEST, "유효하지 않은 역할입니다.");
         }
-    }
-
-    /** 백엔드 RoleName → 프론트 ROLES 상수 매핑 */
-    private String toFrontendRole(RoleName roleName) {
-        return switch (roleName) {
-            case WAREHOUSE_MANAGER -> "WH_MANAGER";
-            case WAREHOUSE_WORKER  -> "WH_WORKER";
-            default                -> roleName.name();
-        };
     }
 
     private LoginResponse buildLoginResponse(Account account, String accessToken, String refreshToken) {
@@ -299,7 +290,7 @@ public class AuthService {
         userInfo.setId(account.getAccountId());
         userInfo.setEmail(account.getEmail());
         userInfo.setName(account.getAccountName());
-        userInfo.setRole(toFrontendRole(account.getRole().getRoleName()));
+        userInfo.setRole(account.getRole().getRoleName().name());
         userInfo.setStatus(account.getAccountStatus().name());
         userInfo.setTenantId(account.getTenantId());
         userInfo.setSellerId(account.getSellerId());

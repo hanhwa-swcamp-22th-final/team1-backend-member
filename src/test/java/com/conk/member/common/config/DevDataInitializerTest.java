@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,6 +40,9 @@ class DevDataInitializerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private DevDataInitializer initializer;
 
     @BeforeEach
@@ -48,7 +52,8 @@ class DevDataInitializerTest {
                 tenantRepository,
                 sellerRepository,
                 accountRepository,
-                passwordEncoder
+                passwordEncoder,
+                jdbcTemplate
         );
     }
 

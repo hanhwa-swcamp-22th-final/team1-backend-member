@@ -57,7 +57,7 @@ class MailServiceImplTest {
         @DisplayName("정상 발송 - JavaMailSender.send() 호출됨")
         void sendInviteMail_success() {
             mailServiceImpl.sendInviteMail(
-                    "manager@example.com", "홍길동", "WAREHOUSE_MANAGER", "테스트업체", "Temp@1234");
+                    "manager@example.com", "홍길동", "WH_MANAGER", "테스트업체", "Temp@1234");
 
             then(javaMailSender).should().createMimeMessage();
             then(javaMailSender).should().send(realMimeMessage);

@@ -35,7 +35,7 @@ class RoleQueryControllerTest {
     void getRolePermissions_success_returns200() throws Exception {
         RolePermissionMatrixResponse response = new RolePermissionMatrixResponse();
         response.setRoleId("ROLE-002");
-        response.setRoleName("WAREHOUSE_MANAGER");
+        response.setRoleName("WH_MANAGER");
         response.setPermissions(List.of());
 
         given(roleQueryService.getRolePermissions(any())).willReturn(response);
@@ -45,7 +45,7 @@ class RoleQueryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.roleId").value("ROLE-002"))
-                .andExpect(jsonPath("$.data.roleName").value("WAREHOUSE_MANAGER"));
+                .andExpect(jsonPath("$.data.roleName").value("WH_MANAGER"));
     }
 
     @Test

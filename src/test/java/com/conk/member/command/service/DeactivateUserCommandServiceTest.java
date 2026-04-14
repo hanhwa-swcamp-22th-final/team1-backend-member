@@ -42,7 +42,7 @@ class DeactivateUserCommandServiceTest {
 
         workerRole = new Role();
         workerRole.setRoleId("ROLE-003");
-        workerRole.setRoleName(RoleName.WAREHOUSE_WORKER);
+        workerRole.setRoleName(RoleName.WH_WORKER);
 
         account = new Account();
         account.setAccountId("ACC-001");

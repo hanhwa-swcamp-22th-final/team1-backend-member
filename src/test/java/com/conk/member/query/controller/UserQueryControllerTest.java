@@ -31,7 +31,7 @@ class UserQueryControllerTest {
         UserListResponse item = new UserListResponse();
         item.setId("ACC-001");
         item.setName("홍길동");
-        item.setRole("WAREHOUSE_WORKER");
+        item.setRole("WH_WORKER");
         item.setAccountStatus("ACTIVE");
 
         given(userQueryService.getUsers(any())).willReturn(List.of(item));
@@ -41,7 +41,7 @@ class UserQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value("ACC-001"))
                 .andExpect(jsonPath("$.data[0].name").value("홍길동"))
-                .andExpect(jsonPath("$.data[0].role").value("WAREHOUSE_WORKER"))
+                .andExpect(jsonPath("$.data[0].role").value("WH_WORKER"))
                 .andExpect(jsonPath("$.data[0].accountStatus").value("ACTIVE"));
     }
 
@@ -64,14 +64,14 @@ class UserQueryControllerTest {
     void getUsers_withFilter_returns200() throws Exception {
         UserListResponse item = new UserListResponse();
         item.setId("ACC-001");
-        item.setRole("WAREHOUSE_WORKER");
+        item.setRole("WH_WORKER");
         item.setAccountStatus("ACTIVE");
         item.setWarehouseId("WH-001");
 
         given(userQueryService.getUsers(any())).willReturn(List.of(item));
 
         mockMvc.perform(get("/member/users")
-                        .param("role", "WAREHOUSE_WORKER")
+                        .param("role", "WH_WORKER")
                         .param("accountStatus", "ACTIVE")
                         .param("warehouseId", "WH-001"))
                 .andExpect(status().isOk())

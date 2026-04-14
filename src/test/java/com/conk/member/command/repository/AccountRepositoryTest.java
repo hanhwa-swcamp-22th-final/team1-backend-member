@@ -40,7 +40,7 @@ class AccountRepositoryTest {
 
         workerRole = new Role();
         workerRole.setRoleId("ROLE-003");
-        workerRole.setRoleName(RoleName.WAREHOUSE_WORKER);
+        workerRole.setRoleName(RoleName.WH_WORKER);
         workerRole.setRoleDescription("창고작업자");
         workerRole.setCreatedBy("system");
         workerRole.setUpdatedBy("system");

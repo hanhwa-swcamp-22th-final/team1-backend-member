@@ -44,7 +44,7 @@ class CreateDirectUserCommandServiceTest {
     void setUp() {
         warehouseWorkerRole = new Role();
         warehouseWorkerRole.setRoleId("ROLE-003");
-        warehouseWorkerRole.setRoleName(RoleName.WAREHOUSE_WORKER);
+        warehouseWorkerRole.setRoleName(RoleName.WH_WORKER);
 
         request = new CreateDirectUserRequest();
         request.setTenantId("TENANT-001");
@@ -62,7 +62,7 @@ class CreateDirectUserCommandServiceTest {
         given(accountRepository.existsByWorkerCode("WC-001")).willReturn(false);
         given(accountRepository.existsByEmail("worker@example.com")).willReturn(false);
         given(warehouseService.exists("WH-001")).willReturn(true);
-        given(roleRepository.findByRoleName(RoleName.WAREHOUSE_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
+        given(roleRepository.findByRoleName(RoleName.WH_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
         given(passwordService.encode("password123")).willReturn("$2a$encoded");
         given(accountRepository.save(any(Account.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -72,7 +72,7 @@ class CreateDirectUserCommandServiceTest {
         assertThat(response.getWorkerCode()).isEqualTo("WC-001");
         assertThat(response.getTenantId()).isEqualTo("TENANT-001");
         assertThat(response.getWarehouseId()).isEqualTo("WH-001");
-        assertThat(response.getRole()).isEqualTo(RoleName.WAREHOUSE_WORKER.name());
+        assertThat(response.getRole()).isEqualTo(RoleName.WH_WORKER.name());
         assertThat(response.getAccountStatus()).isEqualTo(AccountStatus.ACTIVE.name());
     }
 
@@ -83,7 +83,7 @@ class CreateDirectUserCommandServiceTest {
 
         given(accountRepository.existsByWorkerCode("WC-001")).willReturn(false);
         given(warehouseService.exists("WH-001")).willReturn(true);
-        given(roleRepository.findByRoleName(RoleName.WAREHOUSE_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
+        given(roleRepository.findByRoleName(RoleName.WH_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
         given(passwordService.encode("password123")).willReturn("$2a$encoded");
         given(accountRepository.save(any(Account.class))).willAnswer(inv -> inv.getArgument(0));
 

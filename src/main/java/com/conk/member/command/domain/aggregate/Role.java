@@ -39,7 +39,7 @@ public class Role extends BaseAuditEntity {
     ) {
         Role role = new Role();
         role.setRoleId(roleId);
-        role.setRoleName(RoleName.valueOf(roleName));
+        role.setRoleName(RoleName.fromValue(roleName));
         role.setRoleDescription(roleDescription);
         role.setIsActive(1);
         role.setCreatedBy(createdBy);

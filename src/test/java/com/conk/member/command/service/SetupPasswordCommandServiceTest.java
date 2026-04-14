@@ -74,7 +74,7 @@ class SetupPasswordCommandServiceTest {
     @DisplayName("비밀번호 설정 성공 - 일반 계정")
     void setupPassword_nonMasterAdmin_success() {
         Role workerRole = new Role();
-        workerRole.setRoleName(RoleName.WAREHOUSE_WORKER);
+        workerRole.setRoleName(RoleName.WH_WORKER);
         account.setRole(workerRole);
         account.setTenantId(null);
 

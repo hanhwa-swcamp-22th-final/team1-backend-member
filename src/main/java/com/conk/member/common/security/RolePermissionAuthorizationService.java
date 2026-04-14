@@ -36,7 +36,7 @@ public class RolePermissionAuthorizationService {
         if (roleName == RoleName.SYSTEM_ADMIN || roleName == RoleName.MASTER_ADMIN) {
             return true;
         }
-        if (roleName != RoleName.WAREHOUSE_MANAGER && roleName != RoleName.WAREHOUSE_WORKER) {
+        if (!roleName.isWarehouseManager() && !roleName.isWarehouseWorker()) {
             return true;
         }
 

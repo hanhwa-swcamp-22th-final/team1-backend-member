@@ -59,28 +59,30 @@ class AuthControllerTest {
     @WithMockUser
     void login_success_returns200() throws Exception {
         LoginResponse response = new LoginResponse();
+        LoginResponse.UserInfo user = new LoginResponse.UserInfo();
         response.setToken("access-token");
         response.setRefreshToken("refresh-token");
-        response.setId("ACC-001");
-        response.setEmail("test@example.com");
-        response.setName("테스트유저");
-        response.setRole("MASTER_ADMIN");
-        response.setStatus("ACTIVE");
+        user.setId("ACC-001");
+        user.setEmail("test@example.com");
+        user.setName("테스트유저");
+        user.setRole("MASTER_ADMIN");
+        user.setStatus("ACTIVE");
+        response.setUser(user);
 
         given(authService.login(any())).willReturn(response);
         given(authService.getRefreshExpiration()).willReturn(604800000L);
 
-        mockMvc.perform(post("/member/auth/login")
+                mockMvc.perform(post("/member/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("emailOrWorkerCode", "test@example.com", "password", "password123")))
+                                Map.of("email", "test@example.com", "password", "password123")))
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(cookie().value("refreshToken", "refresh-token"))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").value("access-token"))
-                .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.role").value("MASTER_ADMIN"));
+                .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
+                .andExpect(jsonPath("$.data.user.role").value("MASTER_ADMIN"));
     }
 
     @Test
@@ -90,10 +92,10 @@ class AuthControllerTest {
         given(authService.login(any()))
                 .willThrow(new MemberException(ErrorCode.INVALID_CREDENTIALS));
 
-        mockMvc.perform(post("/member/auth/login")
+                mockMvc.perform(post("/member/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("emailOrWorkerCode", "wrong@example.com", "password", "wrong")))
+                                Map.of("email", "wrong@example.com", "password", "wrong")))
                         .with(csrf()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
@@ -106,10 +108,10 @@ class AuthControllerTest {
         given(authService.login(any()))
                 .willThrow(new MemberException(ErrorCode.FORBIDDEN));
 
-        mockMvc.perform(post("/member/auth/login")
+                mockMvc.perform(post("/member/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("emailOrWorkerCode", "inactive@example.com", "password", "password123")))
+                                Map.of("email", "inactive@example.com", "password", "password123")))
                         .with(csrf()))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false));
@@ -122,10 +124,10 @@ class AuthControllerTest {
         given(authService.login(any()))
                 .willThrow(new MemberException(ErrorCode.INVALID_CREDENTIALS));
 
-        mockMvc.perform(post("/member/auth/login")
+                mockMvc.perform(post("/member/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("emailOrWorkerCode", "none@example.com", "password", "password123")))
+                                Map.of("email", "none@example.com", "password", "password123")))
                         .with(csrf()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));

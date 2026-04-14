@@ -1,7 +1,7 @@
 INSERT INTO role(role_id, role_name, role_description, is_active, created_at) VALUES
 ('ROLE-001', 'MASTER_ADMIN',       'master admin',       1, CURRENT_TIMESTAMP),
-('ROLE-002', 'WAREHOUSE_MANAGER',  'warehouse manager',  1, CURRENT_TIMESTAMP),
-('ROLE-003', 'WAREHOUSE_WORKER',   'warehouse worker',   1, CURRENT_TIMESTAMP),
+('ROLE-002', 'WH_MANAGER',  'warehouse manager',  1, CURRENT_TIMESTAMP),
+('ROLE-003', 'WH_WORKER',   'warehouse worker',   1, CURRENT_TIMESTAMP),
 ('ROLE-004', 'SELLER',             'seller user',        1, CURRENT_TIMESTAMP),
 ('ROLE-005', 'SYSTEM_ADMIN',       'system admin',       1, CURRENT_TIMESTAMP);
 

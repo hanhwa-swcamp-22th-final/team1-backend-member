@@ -63,8 +63,8 @@ public class UpdateRolePermissionsCommandService {
     }
 
     private void validateRolePermissionScope(Role role) {
-        if (role.getRoleName() != RoleName.WAREHOUSE_MANAGER
-                && role.getRoleName() != RoleName.WAREHOUSE_WORKER) {
+        if (!role.getRoleName().isWarehouseManager()
+                && !role.getRoleName().isWarehouseWorker()) {
             throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED);
         }
     }

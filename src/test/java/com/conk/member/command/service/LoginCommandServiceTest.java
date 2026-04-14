@@ -65,7 +65,7 @@ class LoginCommandServiceTest {
     @DisplayName("이메일로 로그인 성공")
     void login_withEmail_success() {
         LoginRequest request = new LoginRequest();
-        request.setEmailOrWorkerCode("test@example.com");
+        request.setEmail("test@example.com");
         request.setPassword("password123");
 
         Tenant tenant = new Tenant();
@@ -85,9 +85,10 @@ class LoginCommandServiceTest {
 
         assertThat(response.getToken()).isEqualTo("access-token");
         assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
-        assertThat(response.getEmail()).isEqualTo("test@example.com");
-        assertThat(response.getName()).isEqualTo("테스트유저");
-        assertThat(response.getTenantName()).isEqualTo("테스트업체");
+        assertThat(response.getUser()).isNotNull();
+        assertThat(response.getUser().getEmail()).isEqualTo("test@example.com");
+        assertThat(response.getUser().getName()).isEqualTo("테스트유저");
+        assertThat(response.getUser().getOrganization()).isEqualTo("테스트업체");
     }
 
     @Test
@@ -97,7 +98,7 @@ class LoginCommandServiceTest {
         account.setWorkerCode("WC-001");
 
         LoginRequest request = new LoginRequest();
-        request.setEmailOrWorkerCode("WC-001");
+        request.setEmail("WC-001");
         request.setPassword("password123");
 
         given(accountRepository.findByEmail("WC-001")).willReturn(Optional.empty());
@@ -116,7 +117,7 @@ class LoginCommandServiceTest {
     @DisplayName("존재하지 않는 계정으로 로그인 실패")
     void login_accountNotFound_throwsException() {
         LoginRequest request = new LoginRequest();
-        request.setEmailOrWorkerCode("none@example.com");
+        request.setEmail("none@example.com");
         request.setPassword("password123");
 
         given(accountRepository.findByEmail("none@example.com")).willReturn(Optional.empty());
@@ -131,7 +132,7 @@ class LoginCommandServiceTest {
     @DisplayName("비밀번호 불일치로 로그인 실패")
     void login_wrongPassword_throwsException() {
         LoginRequest request = new LoginRequest();
-        request.setEmailOrWorkerCode("test@example.com");
+        request.setEmail("test@example.com");
         request.setPassword("wrong");
 
         given(accountRepository.findByEmail("test@example.com")).willReturn(Optional.of(account));
@@ -148,7 +149,7 @@ class LoginCommandServiceTest {
         account.setAccountStatus(AccountStatus.INACTIVE);
 
         LoginRequest request = new LoginRequest();
-        request.setEmailOrWorkerCode("test@example.com");
+        request.setEmail("test@example.com");
         request.setPassword("password123");
 
         given(accountRepository.findByEmail("test@example.com")).willReturn(Optional.of(account));
@@ -165,7 +166,7 @@ class LoginCommandServiceTest {
         account.setAccountStatus(AccountStatus.TEMP_PASSWORD);
 
         LoginRequest request = new LoginRequest();
-        request.setEmailOrWorkerCode("test@example.com");
+        request.setEmail("test@example.com");
         request.setPassword("password123");
 
         given(accountRepository.findByEmail("test@example.com")).willReturn(Optional.of(account));

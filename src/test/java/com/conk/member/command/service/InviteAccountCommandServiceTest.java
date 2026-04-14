@@ -56,14 +56,14 @@ class InviteAccountCommandServiceTest {
     void setUp() {
         warehouseManagerRole = new Role();
         warehouseManagerRole.setRoleId("ROLE-002");
-        warehouseManagerRole.setRoleName(RoleName.WAREHOUSE_MANAGER);
+        warehouseManagerRole.setRoleName(RoleName.WH_MANAGER);
 
         sellerRole = new Role();
         sellerRole.setRoleId("ROLE-004");
         sellerRole.setRoleName(RoleName.SELLER);
 
         warehouseManagerRequest = new InviteAccountRequest();
-        warehouseManagerRequest.setRole("WAREHOUSE_MANAGER");
+        warehouseManagerRequest.setRole("WH_MANAGER");
         warehouseManagerRequest.setTenantId("TENANT-001");
         warehouseManagerRequest.setWarehouseId("WH-001");
         warehouseManagerRequest.setName("창고관리자");
@@ -78,7 +78,7 @@ class InviteAccountCommandServiceTest {
     }
 
     @Test
-    @DisplayName("WAREHOUSE_MANAGER 초대 성공")
+    @DisplayName("WH_MANAGER 초대 성공")
     void invite_warehouseManager_success() {
         Tenant tenant = new Tenant();
         tenant.setTenantId("TENANT-001");
@@ -86,7 +86,7 @@ class InviteAccountCommandServiceTest {
 
         given(accountRepository.existsByEmail("manager@example.com")).willReturn(false);
         given(warehouseService.exists("WH-001")).willReturn(true);
-        given(roleRepository.findByRoleName(RoleName.WAREHOUSE_MANAGER)).willReturn(Optional.of(warehouseManagerRole));
+        given(roleRepository.findByRoleName(RoleName.WH_MANAGER)).willReturn(Optional.of(warehouseManagerRole));
         given(passwordService.generateTemporaryPassword()).willReturn("Temp@1234");
         given(passwordService.encode("Temp@1234")).willReturn("$2a$encoded");
         given(accountRepository.save(any(Account.class))).willAnswer(inv -> inv.getArgument(0));
@@ -96,7 +96,7 @@ class InviteAccountCommandServiceTest {
 
         InviteAccountResponse response = authService.invite(warehouseManagerRequest, "ACC-INVITER");
 
-        assertThat(response.getRole()).isEqualTo(RoleName.WAREHOUSE_MANAGER.name());
+        assertThat(response.getRole()).isEqualTo(RoleName.WH_MANAGER.name());
         assertThat(response.getEmail()).isEqualTo("manager@example.com");
         assertThat(response.getName()).isEqualTo("창고관리자");
         then(mailService).should().sendInviteMail(any(), any(), any(), any(), any());
@@ -137,9 +137,9 @@ class InviteAccountCommandServiceTest {
     }
 
     @Test
-    @DisplayName("WAREHOUSE_WORKER 역할 초대 시도 시 예외 발생")
+    @DisplayName("WH_WORKER 역할 초대 시도 시 예외 발생")
     void invite_workerRole_throwsException() {
-        warehouseManagerRequest.setRole("WAREHOUSE_WORKER");
+        warehouseManagerRequest.setRole("WH_WORKER");
 
         assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER"))
                 .isInstanceOf(MemberException.class)
@@ -157,7 +157,7 @@ class InviteAccountCommandServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 창고로 WAREHOUSE_MANAGER 초대 시 예외 발생")
+    @DisplayName("존재하지 않는 창고로 WH_MANAGER 초대 시 예외 발생")
     void invite_invalidWarehouse_throwsException() {
         given(accountRepository.existsByEmail("manager@example.com")).willReturn(false);
         given(warehouseService.exists("WH-001")).willReturn(false);

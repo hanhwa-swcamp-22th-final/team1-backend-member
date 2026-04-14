@@ -30,7 +30,7 @@ class UserQueryServiceTest {
         UserListResponse item = new UserListResponse();
         item.setId("ACC-001");
         item.setName("홍길동");
-        item.setRole("WAREHOUSE_WORKER");
+        item.setRole("WH_WORKER");
         item.setAccountStatus("ACTIVE");
         item.setTenantId("TENANT-001");
         item.setWarehouseId("WH-001");
@@ -43,7 +43,7 @@ class UserQueryServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo("ACC-001");
         assertThat(result.get(0).getName()).isEqualTo("홍길동");
-        assertThat(result.get(0).getRole()).isEqualTo("WAREHOUSE_WORKER");
+        assertThat(result.get(0).getRole()).isEqualTo("WH_WORKER");
         assertThat(result.get(0).getWorkerCode()).isEqualTo("WC-001");
     }
 
@@ -62,12 +62,12 @@ class UserQueryServiceTest {
     void getUsers_withFilter() {
         UserListRequest request = new UserListRequest();
         request.setTenantId("TENANT-001");
-        request.setRole("WAREHOUSE_WORKER");
+        request.setRole("WH_WORKER");
         request.setAccountStatus("ACTIVE");
 
         UserListResponse item = new UserListResponse();
         item.setId("ACC-001");
-        item.setRole("WAREHOUSE_WORKER");
+        item.setRole("WH_WORKER");
         item.setAccountStatus("ACTIVE");
 
         given(memberUserQueryMapper.findUsers(request)).willReturn(List.of(item));

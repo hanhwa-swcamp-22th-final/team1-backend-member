@@ -43,11 +43,11 @@ class RoleQueryServiceTest {
     void setUp() {
         warehouseManagerRole = new Role();
         warehouseManagerRole.setRoleId("ROLE-002");
-        warehouseManagerRole.setRoleName(RoleName.WAREHOUSE_MANAGER);
+        warehouseManagerRole.setRoleName(RoleName.WH_MANAGER);
 
         warehouseWorkerRole = new Role();
         warehouseWorkerRole.setRoleId("ROLE-003");
-        warehouseWorkerRole.setRoleName(RoleName.WAREHOUSE_WORKER);
+        warehouseWorkerRole.setRoleName(RoleName.WH_WORKER);
 
         masterAdminRole = new Role();
         masterAdminRole.setRoleId("ROLE-001");
@@ -77,7 +77,7 @@ class RoleQueryServiceTest {
         RolePermissionMatrixResponse result = roleQueryService.getRolePermissions(request);
 
         assertThat(result.getRoleId()).isEqualTo("ROLE-002");
-        assertThat(result.getRoleName()).isEqualTo(RoleName.WAREHOUSE_MANAGER.name());
+        assertThat(result.getRoleName()).isEqualTo(RoleName.WH_MANAGER.name());
         assertThat(result.getPermissions()).hasSize(1);
         assertThat(result.getPermissions().get(0).getPermissionName()).isEqualTo("재고 조회");
     }
@@ -86,14 +86,14 @@ class RoleQueryServiceTest {
     @DisplayName("roleName으로 권한 매트릭스 조회 성공")
     void getRolePermissions_byRoleName_success() {
         RolePermissionMatrixRequest request = new RolePermissionMatrixRequest();
-        request.setRoleName("WAREHOUSE_WORKER");
+        request.setRoleName("WH_WORKER");
 
-        given(roleRepository.findByRoleName(RoleName.WAREHOUSE_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
+        given(roleRepository.findByRoleName(RoleName.WH_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
         given(rolePermissionQueryMapper.findRolePermissions("ROLE-003")).willReturn(List.of());
 
         RolePermissionMatrixResponse result = roleQueryService.getRolePermissions(request);
 
-        assertThat(result.getRoleName()).isEqualTo(RoleName.WAREHOUSE_WORKER.name());
+        assertThat(result.getRoleName()).isEqualTo(RoleName.WH_WORKER.name());
     }
 
     @Test

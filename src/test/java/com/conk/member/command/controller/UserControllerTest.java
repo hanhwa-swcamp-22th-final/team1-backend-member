@@ -40,7 +40,7 @@ class UserControllerTest {
     void createDirect_success_returns200() throws Exception {
         CreateDirectUserResponse response = new CreateDirectUserResponse();
         response.setId("ACC-001");
-        response.setRole("WAREHOUSE_WORKER");
+        response.setRole("WH_WORKER");
         response.setName("홍길동");
         response.setWorkerCode("WC-001");
         response.setAccountStatus("ACTIVE");

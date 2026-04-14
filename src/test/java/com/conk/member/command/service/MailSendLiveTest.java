@@ -45,7 +45,7 @@ class MailSendLiveTest {
     @Test
     void 초대_메일_발송() {
         buildMailService().sendInviteMail(
-                TARGET, "ㅋㅋ", "WAREHOUSE_MANAGER", "테스트업체", "Temp@1234");
+                TARGET, "ㅋㅋ", "WH_MANAGER", "테스트업체", "Temp@1234");
         System.out.println("[초대 메일] 발송 완료 → " + TARGET);
     }
 

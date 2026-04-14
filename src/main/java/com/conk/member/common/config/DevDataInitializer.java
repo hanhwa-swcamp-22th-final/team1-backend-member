@@ -16,9 +16,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
 
 @Component
 @Profile("dev")
@@ -51,17 +55,20 @@ public class DevDataInitializer implements ApplicationRunner {
     private final SellerRepository sellerRepository;
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     public DevDataInitializer(RoleRepository roleRepository,
                               TenantRepository tenantRepository,
                               SellerRepository sellerRepository,
                               AccountRepository accountRepository,
-                              PasswordEncoder passwordEncoder) {
+                              PasswordEncoder passwordEncoder,
+                              JdbcTemplate jdbcTemplate) {
         this.roleRepository = roleRepository;
         this.tenantRepository = tenantRepository;
         this.sellerRepository = sellerRepository;
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -71,6 +78,7 @@ public class DevDataInitializer implements ApplicationRunner {
     }
 
     void initialize() {
+        migrateLegacyWarehouseRoleNames();
         ensureRoles();
 
         Tenant tenant = ensureDemoTenant();
@@ -89,9 +97,28 @@ public class DevDataInitializer implements ApplicationRunner {
     private void ensureRoles() {
         ensureRole("ROLE-001", RoleName.SYSTEM_ADMIN, "플랫폼 전체 사용자 및 업체 관리");
         ensureRole("ROLE-002", RoleName.MASTER_ADMIN, "3PL 업체 운영, 셀러 회사 및 계정 관리");
-        ensureRole("ROLE-003", RoleName.WAREHOUSE_MANAGER, "창고 운영, 로케이션·재고·작업자 관리");
-        ensureRole("ROLE-004", RoleName.WAREHOUSE_WORKER, "작업자 코드 로그인 기반 현장 작업 처리");
+        ensureRole("ROLE-003", RoleName.WH_MANAGER, "창고 운영, 로케이션·재고·작업자 관리");
+        ensureRole("ROLE-004", RoleName.WH_WORKER, "작업자 코드 로그인 기반 현장 작업 처리");
         ensureRole("ROLE-005", RoleName.SELLER, "상품·ASN·주문 관리, 재고 알림 확인");
+    }
+
+    private void migrateLegacyWarehouseRoleNames() {
+        List<Map<String, Object>> roles = jdbcTemplate.queryForList(
+                "SELECT role_id, role_name FROM role"
+        );
+
+        for (Map<String, Object> row : roles) {
+            String roleId = String.valueOf(row.get("role_id"));
+            String roleName = String.valueOf(row.get("role_name"));
+
+            if ("WAREHOUSE_MANAGER".equalsIgnoreCase(roleName)) {
+                jdbcTemplate.update("UPDATE role SET role_name = ? WHERE role_id = ?", RoleName.WH_MANAGER.name(), roleId);
+            }
+
+            if ("WAREHOUSE_WORKER".equalsIgnoreCase(roleName)) {
+                jdbcTemplate.update("UPDATE role SET role_name = ? WHERE role_id = ?", RoleName.WH_WORKER.name(), roleId);
+            }
+        }
     }
 
     private void ensureRole(String roleId, RoleName roleName, String description) {
@@ -192,7 +219,7 @@ public class DevDataInitializer implements ApplicationRunner {
             return;
         }
 
-        Role role = getRole(RoleName.WAREHOUSE_MANAGER);
+        Role role = getRole(RoleName.WH_MANAGER);
         Account account = Account.createEmailAccount(
                 role,
                 tenant,
@@ -215,7 +242,7 @@ public class DevDataInitializer implements ApplicationRunner {
             return;
         }
 
-        Role role = getRole(RoleName.WAREHOUSE_WORKER);
+        Role role = getRole(RoleName.WH_WORKER);
         Account account = Account.createWorkerAccount(
                 role,
                 tenant,

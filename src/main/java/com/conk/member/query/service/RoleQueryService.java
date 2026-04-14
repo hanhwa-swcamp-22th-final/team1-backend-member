@@ -92,15 +92,15 @@ public class RoleQueryService {
     }
 
     private void validateRbacScope(Role role) {
-        if (role.getRoleName() != RoleName.WAREHOUSE_MANAGER
-                && role.getRoleName() != RoleName.WAREHOUSE_WORKER) {
+        if (!role.getRoleName().isWarehouseManager()
+                && !role.getRoleName().isWarehouseWorker()) {
             throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED);
         }
     }
 
     private RoleName parseRoleName(String roleName) {
         try {
-            return RoleName.valueOf(roleName);
+            return RoleName.fromValue(roleName);
         } catch (IllegalArgumentException exception) {
             throw new MemberException(ErrorCode.BAD_REQUEST, "유효하지 않은 역할명입니다: " + roleName);
         }
