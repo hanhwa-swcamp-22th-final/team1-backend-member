@@ -15,8 +15,11 @@ import java.util.Optional;
 public interface AccountRepository extends JpaRepository<Account, String> {
     Optional<Account> findByEmail(String email);
     Optional<Account> findByWorkerCode(String workerCode);
+    Optional<Account> findByTenantIdAndWorkerCode(String tenantId, String workerCode);
     boolean existsByEmail(String email);
     boolean existsByWorkerCode(String workerCode);
+    boolean existsByTenantIdAndWorkerCode(String tenantId, String workerCode);
+    List<Account> findAllByTenantIdAndRoleRoleNameOrderByWorkerCodeAsc(String tenantId, RoleName roleName);
 
     @Query("select count(a) from Account a where a.tenantId = :tenantId and a.role.roleName = :roleName and a.accountStatus = :status")
     long countByTenantIdAndRoleNameAndAccountStatus(@Param("tenantId") String tenantId, @Param("roleName") RoleName roleName, @Param("status") AccountStatus status);
