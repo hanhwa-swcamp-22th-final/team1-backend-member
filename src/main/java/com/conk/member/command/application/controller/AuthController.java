@@ -69,7 +69,11 @@ public class AuthController {
             @AuthenticationPrincipal MemberUserPrincipal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
                 "invite sent",
-                authService.invite(request, principal == null ? null : principal.getAccountId())
+                authService.invite(
+                        request,
+                        principal == null ? null : principal.getAccountId(),
+                        principal == null ? null : principal.getTenantId()  // JwtAuthenticationFilter가 JWT에서 파싱한 값
+                )
         ));
     }
 

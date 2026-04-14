@@ -17,6 +17,7 @@ public class InviteAccountResponse {
     private String warehouseId;
     private String name;
     private String email;
+    private String workerCode;      // WH_WORKER 발급 시 설정, 나머지 역할은 null
     private String inviteStatus;
     private LocalDateTime inviteSentAt;
 }
