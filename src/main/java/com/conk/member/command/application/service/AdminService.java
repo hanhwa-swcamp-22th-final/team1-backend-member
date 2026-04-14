@@ -147,10 +147,6 @@ public class AdminService {
     // ─── createCompany ────────────────────────────────────────────────────────
 
     public CreateCompanyResponse createCompany(CreateCompanyRequest request) {
-        if (accountRepository.existsByEmail(request.getMasterAdminEmail())) {
-            throw new MemberException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
         Tenant tenant = new Tenant();
         tenant.setTenantId(generateId("TENANT"));
         tenant.setTenantCode(generateCode("TEN"));
@@ -164,29 +160,12 @@ public class AdminService {
         tenant.setStatus(TenantStatus.SETTING);
         tenantRepository.save(tenant);
 
-        Role role = getRole(RoleName.MASTER_ADMIN);
-        Account adminAccount = new Account();
-        adminAccount.setAccountId(generateId("ACC"));
-        adminAccount.setRole(role);
-        adminAccount.setTenantId(tenant.getTenantId());
-        adminAccount.setAccountName(request.getMasterAdminName());
-        adminAccount.setEmail(request.getMasterAdminEmail());
-        adminAccount.setAccountStatus(AccountStatus.TEMP_PASSWORD);
-        adminAccount.setIsTemporaryPassword(Boolean.TRUE);
-        accountRepository.save(adminAccount);
-
-        String rawToken = issueSetupToken(adminAccount.getAccountId());
-        mailService.sendSetupLink(adminAccount.getEmail(), adminAccount.getAccountName(),
-                tenant.getTenantName(), rawToken);
-
         CreateCompanyResponse response = new CreateCompanyResponse();
         response.setId(tenant.getTenantId());
         response.setTenantCode(tenant.getTenantCode());
         response.setName(tenant.getTenantName());
         response.setStatus(tenant.getStatus().name());
         response.setCreatedAt(tenant.getCreatedAt());
-        response.setMasterAdminUserId(adminAccount.getAccountId());
-        response.setMasterAdminEmail(adminAccount.getEmail());
         return response;
     }
 
