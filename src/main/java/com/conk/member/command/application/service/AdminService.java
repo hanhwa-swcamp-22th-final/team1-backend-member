@@ -184,13 +184,11 @@ public class AdminService {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
 
-        if (StringUtils.hasText(request.getTenantName())) tenant.setTenantName(request.getTenantName());
         if (StringUtils.hasText(request.getRepresentativeName())) tenant.setRepresentativeName(request.getRepresentativeName());
         if (StringUtils.hasText(request.getBusinessNo())) tenant.setBusinessNo(request.getBusinessNo());
         if (StringUtils.hasText(request.getPhoneNo())) tenant.setPhoneNo(request.getPhoneNo());
         if (StringUtils.hasText(request.getEmail())) tenant.setEmail(request.getEmail());
         if (StringUtils.hasText(request.getAddress())) tenant.setAddress(request.getAddress());
-        if (StringUtils.hasText(request.getTenantType())) tenant.setTenantType(request.getTenantType());
         if (StringUtils.hasText(request.getStatus())) tenant.setStatus(TenantStatus.valueOf(request.getStatus()));
 
         tenantRepository.save(tenant);

@@ -8,12 +8,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class UpdateCompanyRequest {
-    private String tenantName;
     private String representativeName;
     private String businessNo;
     private String phoneNo;
     private String email;
     private String address;
-    private String tenantType;
     private String status;
 }
