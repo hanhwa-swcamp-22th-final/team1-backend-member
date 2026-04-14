@@ -104,6 +104,9 @@ public class SecurityConfig {
             "/member/auth/refresh"
         ).permitAll()
 
+        // WMS 내부 연동 API
+        .requestMatchers("/member/internal/**").permitAll()
+
         // 관리자 전용
         .requestMatchers("/member/admin/**").hasAuthority("SYSTEM_ADMIN")
 
