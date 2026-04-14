@@ -131,13 +131,20 @@ public class AuthService {
 
     // ─── invite ───────────────────────────────────────────────────────────────
 
-    public InviteAccountResponse invite(InviteAccountRequest request, String inviterAccountId) {
+    public InviteAccountResponse invite(InviteAccountRequest request,
+                                        String inviterAccountId,
+                                        String inviterTenantId) {
         RoleName roleName = parseRoleName(request.getRole());
         if (!StringUtils.hasText(inviterAccountId)) {
             throw new MemberException(ErrorCode.UNAUTHORIZED, "초대 요청자를 확인할 수 없습니다.");
         }
         validateInviteRole(roleName);
-        validateDuplicateEmail(request.getEmail());
+        resolveOrganizationId(roleName, request);    // organizationId → sellerId/warehouseId 분기
+        if (roleName == RoleName.WH_WORKER) {
+            validateDuplicateWorkerCode(request.getEmployeeNumber());
+        } else {
+            validateDuplicateEmail(request.getEmail());
+        }
         validateInviteReference(roleName, request);
 
         Role role = getRole(roleName);
@@ -146,12 +153,18 @@ public class AuthService {
         Account invitedAccount = new Account();
         invitedAccount.setAccountId(generateId("ACC"));
         invitedAccount.setRole(role);
-        invitedAccount.setTenantId(request.getTenantId());
+        invitedAccount.setTenantId(inviterTenantId);             // FE는 tenantId 미전송 → 초대자 tenantId 사용
         invitedAccount.setSellerId(request.getSellerId());
         invitedAccount.setWarehouseId(request.getWarehouseId());
         invitedAccount.setAccountName(request.getName());
-        invitedAccount.setEmail(request.getEmail());
-        invitedAccount.applyTemporaryPassword(passwordService.encode(temporaryPassword));
+        if (roleName == RoleName.WH_WORKER) {
+            // 워커: 사번을 workerCode로 저장, 초기 비밀번호 = 사번
+            invitedAccount.setWorkerCode(request.getEmployeeNumber());
+            invitedAccount.applyTemporaryPassword(passwordService.encode(request.getEmployeeNumber()));
+        } else {
+            invitedAccount.setEmail(request.getEmail());
+            invitedAccount.applyTemporaryPassword(passwordService.encode(temporaryPassword));
+        }
         accountRepository.save(invitedAccount);
 
         Invitation invitation = new Invitation();
@@ -159,16 +172,19 @@ public class AuthService {
         invitation.setInviterAccountId(inviterAccountId);
         invitation.setInviteeAccountId(invitedAccount.getAccountId());
         invitation.setTargetRoleId(role.getRoleId());
-        invitation.setTenantId(request.getTenantId());
+        invitation.setTenantId(inviterTenantId);                 // FE는 tenantId 미전송 → 초대자 tenantId 사용
         invitation.setSellerId(request.getSellerId());
         invitation.setWarehouseId(request.getWarehouseId());
         invitation.setInviteEmail(request.getEmail());
         invitation.markPending();
         invitationRepository.save(invitation);
 
-        String companyName = resolveCompanyName(request.getTenantId());
-        mailService.sendInviteMail(request.getEmail(), request.getName(),
-                roleName.name(), companyName, temporaryPassword);
+        if (roleName != RoleName.WH_WORKER) {
+            // 워커는 이메일 없으므로 초대 메일 발송 생략
+            String companyName = resolveCompanyName(inviterTenantId);
+            mailService.sendInviteMail(request.getEmail(), request.getName(),
+                    roleName.name(), companyName, temporaryPassword);
+        }
 
         return buildInviteResponse(invitedAccount, invitation, roleName.name());
     }
@@ -237,8 +253,8 @@ public class AuthService {
     }
 
     private void validateInviteRole(RoleName roleName) {
-        if (roleName != RoleName.WH_MANAGER && roleName != RoleName.SELLER) {
-            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WH_MANAGER/SELLER 초대만 허용합니다.");
+        if (roleName != RoleName.WH_MANAGER && roleName != RoleName.WH_WORKER && roleName != RoleName.SELLER) {
+            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WH_MANAGER/WH_WORKER/SELLER 초대만 허용합니다.");
         }
     }
 
@@ -250,7 +266,8 @@ public class AuthService {
 
     
     private void validateInviteReference(RoleName roleName, InviteAccountRequest request) {
-        if (roleName == RoleName.WH_MANAGER && !warehouseService.exists(request.getWarehouseId())) {
+        if ((roleName == RoleName.WH_MANAGER || roleName == RoleName.WH_WORKER)
+                && !warehouseService.exists(request.getWarehouseId())) {
             throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 창고입니다.");
         }
         if (roleName == RoleName.SELLER && sellerRepository.findById(request.getSellerId()).isEmpty()) {
@@ -316,6 +333,7 @@ public class AuthService {
         response.setWarehouseId(invitation.getWarehouseId());
         response.setName(account.getAccountName());
         response.setEmail(invitation.getInviteEmail());
+        response.setWorkerCode(account.getWorkerCode());     // WH_WORKER 이외 역할은 null
         response.setInviteStatus(invitation.getInviteStatus().name());
         response.setInviteSentAt(invitation.getInviteSentAt());
         return response;
@@ -342,5 +360,34 @@ public class AuthService {
 
     private String generateId(String prefix) {
         return prefix + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    // ─── organizationId 분기 ──────────────────────────────────────────────────
+
+    /**
+     * FE는 역할에 관계없이 단일 필드 organizationId로 조직 ID를 전송합니다.
+     * 역할에 따라 sellerId 또는 warehouseId에 매핑합니다.
+     */
+    private void resolveOrganizationId(RoleName roleName, InviteAccountRequest request) {
+        String orgId = request.getOrganizationId();
+        if (!StringUtils.hasText(orgId)) return;
+        if (roleName == RoleName.SELLER) {
+            request.setSellerId(orgId);
+        } else if (roleName == RoleName.WH_MANAGER || roleName == RoleName.WH_WORKER) {
+            request.setWarehouseId(orgId);
+        }
+    }
+
+    /**
+     * WH_WORKER 사번(employeeNumber) 중복 검증.
+     * workerCode는 로그인 ID 역할을 하므로 중복 불허.
+     */
+    private void validateDuplicateWorkerCode(String workerCode) {
+        if (!StringUtils.hasText(workerCode)) {
+            throw new MemberException(ErrorCode.BAD_REQUEST, "사번(employeeNumber)은 필수입니다.");
+        }
+        if (accountRepository.existsByWorkerCode(workerCode)) {
+            throw new MemberException(ErrorCode.DUPLICATE_WORKER_CODE, "이미 사용 중인 사번입니다.");
+        }
     }
 }

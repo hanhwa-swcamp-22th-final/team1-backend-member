@@ -15,6 +15,4 @@ public class CreateCompanyRequest {
     private String email;
     private String address;
     private String tenantType;
-    private String masterAdminName;
-    private String masterAdminEmail;
 }
