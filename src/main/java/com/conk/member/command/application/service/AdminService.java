@@ -1,9 +1,11 @@
 package com.conk.member.command.application.service;
 
 import com.conk.member.command.application.dto.request.CreateAdminUserRequest;
+import com.conk.member.command.application.dto.request.CreateCompanyLogRequest;
 import com.conk.member.command.application.dto.request.CreateCompanyRequest;
 import com.conk.member.command.application.dto.request.UpdateAdminUserRequest;
 import com.conk.member.command.application.dto.request.UpdateCompanyRequest;
+import com.conk.member.command.application.dto.response.CompanyLogResponse;
 import com.conk.member.command.application.dto.response.CreateAdminUserResponse;
 import com.conk.member.command.application.dto.response.CreateCompanyResponse;
 import com.conk.member.command.application.dto.response.UpdateAdminUserResponse;
@@ -13,6 +15,7 @@ import com.conk.member.command.domain.aggregate.Invitation;
 import com.conk.member.command.domain.aggregate.MemberToken;
 import com.conk.member.command.domain.aggregate.Role;
 import com.conk.member.command.domain.aggregate.Tenant;
+import com.conk.member.command.domain.aggregate.TenantLog;
 import com.conk.member.command.domain.enums.AccountStatus;
 import com.conk.member.command.domain.enums.RoleName;
 import com.conk.member.command.domain.enums.TenantStatus;
@@ -21,6 +24,7 @@ import com.conk.member.command.domain.repository.AccountRepository;
 import com.conk.member.command.domain.repository.InvitationRepository;
 import com.conk.member.command.domain.repository.MemberTokenRepository;
 import com.conk.member.command.domain.repository.RoleRepository;
+import com.conk.member.command.domain.repository.TenantLogRepository;
 import com.conk.member.command.domain.repository.TenantRepository;
 import com.conk.member.command.infrastructure.mail.MailService;
 import com.conk.member.command.infrastructure.service.PasswordService;
@@ -32,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -42,6 +48,7 @@ public class AdminService {
     private final InvitationRepository invitationRepository;
     private final RoleRepository roleRepository;
     private final TenantRepository tenantRepository;
+    private final TenantLogRepository tenantLogRepository;
     private final MemberTokenRepository memberTokenRepository;
     private final PasswordService passwordService;
     private final TokenService tokenService;
@@ -51,6 +58,7 @@ public class AdminService {
                         InvitationRepository invitationRepository,
                         RoleRepository roleRepository,
                         TenantRepository tenantRepository,
+                        TenantLogRepository tenantLogRepository,
                         MemberTokenRepository memberTokenRepository,
                         PasswordService passwordService,
                         TokenService tokenService,
@@ -59,6 +67,7 @@ public class AdminService {
         this.invitationRepository = invitationRepository;
         this.roleRepository = roleRepository;
         this.tenantRepository = tenantRepository;
+        this.tenantLogRepository = tenantLogRepository;
         this.memberTokenRepository = memberTokenRepository;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
@@ -192,6 +201,34 @@ public class AdminService {
         response.setName(tenant.getTenantName());
         response.setStatus(tenant.getStatus().name());
         response.setUpdatedAt(tenant.getUpdatedAt());
+        return response;
+    }
+
+    // ─── createCompanyLog / getCompanyLogs ─────────────────────────────────────
+
+    public CompanyLogResponse createCompanyLog(CreateCompanyLogRequest request, String actorId) {
+        TenantLog log = new TenantLog();
+        log.setLogId(generateId("LOG"));
+        log.setTenantId(request.getCompanyId());
+        log.setActor(actorId);                    // principal에서 추출한 실제 요청자
+        log.setAction(request.getAction());
+        log.setLoggedAt(LocalDateTime.now());     // FE at 값 무시, 서버 시각 사용
+        tenantLogRepository.save(log);
+        return toCompanyLogResponse(log);
+    }
+
+    public List<CompanyLogResponse> getCompanyLogs(String companyId) {
+        return tenantLogRepository.findTop10ByTenantIdOrderByLoggedAtDesc(companyId)
+                .stream().map(this::toCompanyLogResponse).toList();
+    }
+
+    private CompanyLogResponse toCompanyLogResponse(TenantLog log) {
+        CompanyLogResponse response = new CompanyLogResponse();
+        response.setLogId(log.getLogId());
+        response.setCompanyId(log.getTenantId());
+        response.setAt(log.getLoggedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        response.setActor(log.getActor());
+        response.setAction(log.getAction());
         return response;
     }
 
