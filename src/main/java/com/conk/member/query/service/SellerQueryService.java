@@ -4,11 +4,14 @@ import com.conk.member.command.domain.aggregate.SellerWarehouse;
 import com.conk.member.command.domain.repository.SellerWarehouseRepository;
 import com.conk.member.query.dto.request.SellerListRequest;
 import com.conk.member.query.dto.response.SellerListResponse;
+import com.conk.member.query.dto.response.SellerStatsResponse;
 import com.conk.member.query.mapper.SellerQueryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -30,6 +33,29 @@ public class SellerQueryService {
             result.add(toSellerListResponse(item));
         }
         return result;
+    }
+
+    public SellerStatsResponse getSellerStats() {
+        List<SellerListResponse> sellers = getSellerList(new SellerListRequest());
+        YearMonth currentMonth = YearMonth.now();
+
+        int activeSellerCount = (int) sellers.stream()
+                .filter(seller -> "ACTIVE".equalsIgnoreCase(seller.getStatus()))
+                .count();
+
+        int newThisMonth = (int) sellers.stream()
+                .filter(seller -> seller.getCreatedAt() != null)
+                .map(seller -> seller.getCreatedAt().toLocalDate())
+                .filter(createdDate -> YearMonth.from(createdDate).equals(currentMonth))
+                .count();
+
+        String trendType = newThisMonth > 0 ? "up" : "neutral";
+
+        return SellerStatsResponse.builder()
+                .activeSellerCount(activeSellerCount)
+                .newThisMonth(newThisMonth)
+                .trendType(trendType)
+                .build();
     }
 
     private SellerListResponse toSellerListResponse(SellerListResponse item) {
