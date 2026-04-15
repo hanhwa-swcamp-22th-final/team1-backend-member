@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.mapper.CompanyLogQueryMapper">
+
+    <select id="findCompanyLogs"
+            parameterType="com.conk.member.query.dto.request.CompanyLogListRequest"
+            resultType="com.conk.member.command.application.dto.response.CompanyLogResponse">
+        SELECT
+            cl.company_log_id AS id,
+            cl.tenant_id AS company_id,
+            cl.created_at AS at,
+            cl.actor_name AS actor,
+            cl.action_summary AS action
+        FROM company_log cl
+        <where>
+            <if test="companyId != null and companyId != ''">
+                cl.tenant_id = #{companyId}
+            </if>
+            <if test="actor != null and actor != ''">
+                AND cl.actor_name LIKE CONCAT('%', #{actor}, '%')
+            </if>
+            <if test="action != null and action != ''">
+                AND cl.action_summary LIKE CONCAT('%', #{action}, '%')
+            </if>
+            <if test="from != null">
+                AND cl.created_at <![CDATA[>=]]> #{from}
+            </if>
+            <if test="to != null">
+                AND cl.created_at <![CDATA[<=]]> #{to}
+            </if>
+        </where>
+        ORDER BY cl.created_at DESC, cl.company_log_id DESC
+    </select>
+
+</mapper>

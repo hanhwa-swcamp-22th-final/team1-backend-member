@@ -10,6 +10,7 @@ import com.conk.member.query.dto.request.CompanyListRequest;
 import com.conk.member.query.dto.response.AdminUserListResponse;
 import com.conk.member.query.dto.response.CompanyDetailResponse;
 import com.conk.member.query.dto.response.CompanyListResponse;
+import com.conk.member.query.mapper.CompanyLogQueryMapper;
 import com.conk.member.query.mapper.CompanyQueryMapper;
 import com.conk.member.query.mapper.MemberUserQueryMapper;
 import com.conk.member.query.service.AdminQueryService;
@@ -32,6 +33,7 @@ class AdminQueryServiceTest {
 
     @Mock MemberUserQueryMapper memberUserQueryMapper;
     @Mock CompanyQueryMapper companyQueryMapper;
+    @Mock CompanyLogQueryMapper companyLogQueryMapper;
     @Mock AccountRepository accountRepository;
     @Mock SellerWarehouseRepository sellerWarehouseRepository;
 
@@ -99,6 +101,28 @@ class AdminQueryServiceTest {
         List<CompanyListResponse> result = adminQueryService.getCompanies(new CompanyListRequest());
 
         assertThat(result).isEmpty();
+    }
+
+
+    @Test
+    @DisplayName("업체 로그 목록 조회 성공")
+    void getCompanyLogs_success() {
+        com.conk.member.command.application.dto.response.CompanyLogResponse item = new com.conk.member.command.application.dto.response.CompanyLogResponse();
+        item.setId("1712990000000");
+        item.setCompanyId("TENANT-001");
+        item.setActor("sys.admin@conk.com");
+        item.setAction("총괄 관리자 추가 발급");
+
+        com.conk.member.query.dto.request.CompanyLogListRequest request = new com.conk.member.query.dto.request.CompanyLogListRequest();
+        request.setCompanyId("TENANT-001");
+
+        given(companyLogQueryMapper.findCompanyLogs(request)).willReturn(List.of(item));
+
+        List<com.conk.member.command.application.dto.response.CompanyLogResponse> result = adminQueryService.getCompanyLogs(request);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("1712990000000");
+        assertThat(result.get(0).getAction()).isEqualTo("총괄 관리자 추가 발급");
     }
 
     // ─── getCompanyById ───────────────────────────────────────────────────────

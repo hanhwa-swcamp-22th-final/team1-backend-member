@@ -41,3 +41,7 @@ INSERT INTO role_permission_history(history_id, role_permission_id, role_id, per
 ('HIS-001', 'RP-001', 'ROLE-002', 'PERM-001', 'UPDATE', 1, 1, 0, 0, 1, 1, 0, 'master@conk.com', TIMESTAMP '2026-04-03 14:00:00'),
 ('HIS-002', 'RP-002', 'ROLE-002', 'PERM-002', 'CREATE', 0, 0, 0, 0, 1, 1, 0, 'master@conk.com', TIMESTAMP '2026-04-03 13:50:00'),
 ('HIS-003', 'RP-003', 'ROLE-003', 'PERM-003', 'UPDATE', 1, 1, 0, 0, 1, 0, 0, 'master@conk.com', TIMESTAMP '2026-04-03 13:40:00');
+
+
+INSERT INTO company_log(company_log_id, account_id, tenant_id, actor_name, action_type, action_summary, action_detail, created_at) VALUES
+('1712990000000', 'ACC-001', 'TENANT-001', 'sys.admin@conk.com', 'MASTER_ADMIN_CREATED', '총괄 관리자 추가 발급', NULL, TIMESTAMP '2026-04-12 10:00:00');

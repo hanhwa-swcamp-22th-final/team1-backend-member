@@ -1,5 +1,6 @@
 package com.conk.member.query.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,4 +25,24 @@ public class SellerListResponse {
     private List<String> warehouseIds;
     private String status;
     private LocalDateTime createdAt;
+
+    @JsonProperty("contactName")
+    public String getContactName() {
+        return representativeName;
+    }
+
+    @JsonProperty("contactEmail")
+    public String getContactEmail() {
+        return email;
+    }
+
+    @JsonProperty("warehouses")
+    public List<String> getWarehouses() {
+        return warehouseIds;
+    }
+
+    @JsonProperty("category")
+    public String getCategory() {
+        return categoryName;
+    }
 }

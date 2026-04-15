@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -80,15 +81,12 @@ public class AuthService {
         this.warehouseService = warehouseService;
     }
 
-
     public long getRefreshExpiration() {
         return jwtTokenProvider.getRefreshExpiration();
     }
 
-    // ─── login ────────────────────────────────────────────────────────────────
-
     public LoginResponse login(LoginRequest request) {
-        Account account = findLoginAccount(request.getEmail());
+        Account account = findLoginAccount(request.getEmailOrWorkerCode());
         validatePassword(request.getPassword(), account.getPasswordHash());
         validateAccountIsActive(account);
 
@@ -102,16 +100,12 @@ public class AuthService {
         return buildLoginResponse(account, accessToken, refreshToken);
     }
 
-    // ─── logout ───────────────────────────────────────────────────────────────
-
     public void logout(String accountId) {
         if (!StringUtils.hasText(accountId)) {
             throw new MemberException(ErrorCode.UNAUTHORIZED, "로그아웃할 사용자 정보를 확인할 수 없습니다.");
         }
         refreshTokenRepository.deleteById(accountId);
     }
-
-    // ─── refresh ──────────────────────────────────────────────────────────────
 
     public LoginResponse refreshToken(String providedRefreshToken) {
         jwtTokenProvider.validateRefreshToken(providedRefreshToken);
@@ -129,16 +123,21 @@ public class AuthService {
         return buildLoginResponse(account, newAccessToken, newRefreshToken);
     }
 
-    // ─── invite ───────────────────────────────────────────────────────────────
-
     public InviteAccountResponse invite(InviteAccountRequest request, String inviterAccountId) {
         RoleName roleName = parseRoleName(request.getRole());
         if (!StringUtils.hasText(inviterAccountId)) {
             throw new MemberException(ErrorCode.UNAUTHORIZED, "초대 요청자를 확인할 수 없습니다.");
         }
+
+        request.setTenantId(resolveTenantIdForInvite(request, inviterAccountId));
         validateInviteRole(roleName);
-        validateDuplicateEmail(request.getEmail());
         validateInviteReference(roleName, request);
+
+        if (roleName.isWarehouseWorker()) {
+            return createWorkerAccountForFrontend(request);
+        }
+
+        validateDuplicateEmail(request.getEmail());
 
         Role role = getRole(roleName);
         String temporaryPassword = passwordService.generateTemporaryPassword();
@@ -173,8 +172,6 @@ public class AuthService {
         return buildInviteResponse(invitedAccount, invitation, roleName.name());
     }
 
-    // ─── setupPassword ────────────────────────────────────────────────────────
-
     public SetupPasswordResponse setupPassword(SetupPasswordRequest request) {
         String tokenHash = tokenService.hash(request.getSetupToken());
         MemberToken memberToken = memberTokenRepository.findByTokenHash(tokenHash)
@@ -192,8 +189,6 @@ public class AuthService {
 
         return buildSetupPasswordResponse(account);
     }
-
-    // ─── private helpers ──────────────────────────────────────────────────────
 
     private Account findLoginAccount(String emailOrWorkerCode) {
         return accountRepository.findByEmail(emailOrWorkerCode)
@@ -237,25 +232,77 @@ public class AuthService {
     }
 
     private void validateInviteRole(RoleName roleName) {
-        if (roleName != RoleName.WH_MANAGER && roleName != RoleName.SELLER) {
-            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WH_MANAGER/SELLER 초대만 허용합니다.");
+        if (roleName != RoleName.WH_MANAGER && roleName != RoleName.SELLER && roleName != RoleName.WH_WORKER) {
+            throw new MemberException(ErrorCode.ROLE_SCOPE_RESTRICTED, "WH_MANAGER/WH_WORKER/SELLER 처리만 허용합니다.");
         }
     }
 
     private void validateDuplicateEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            throw new MemberException(ErrorCode.BAD_REQUEST, "email은 필수입니다.");
+        }
         if (accountRepository.existsByEmail(email)) {
             throw new MemberException(ErrorCode.DUPLICATE_EMAIL);
         }
     }
 
-    
     private void validateInviteReference(RoleName roleName, InviteAccountRequest request) {
-        if (roleName == RoleName.WH_MANAGER && !warehouseService.exists(request.getWarehouseId())) {
+        if ((roleName == RoleName.WH_MANAGER || roleName == RoleName.WH_WORKER)
+                && !warehouseService.exists(request.getWarehouseId())) {
             throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 창고입니다.");
         }
         if (roleName == RoleName.SELLER && sellerRepository.findById(request.getSellerId()).isEmpty()) {
             throw new MemberException(ErrorCode.INVALID_REFERENCE, "유효하지 않은 셀러입니다.");
         }
+    }
+
+    private String resolveTenantIdForInvite(InviteAccountRequest request, String inviterAccountId) {
+        if (StringUtils.hasText(request.getTenantId())) {
+            return request.getTenantId();
+        }
+        return accountRepository.findById(inviterAccountId)
+                .map(Account::getTenantId)
+                .filter(StringUtils::hasText)
+                .orElseThrow(() -> new MemberException(ErrorCode.BAD_REQUEST, "tenantId를 확인할 수 없습니다."));
+    }
+
+    private InviteAccountResponse createWorkerAccountForFrontend(InviteAccountRequest request) {
+        if (!StringUtils.hasText(request.getEmployeeNumber())) {
+            throw new MemberException(ErrorCode.BAD_REQUEST, "employeeNumber는 필수입니다.");
+        }
+        if (accountRepository.existsByWorkerCode(request.getEmployeeNumber())) {
+            throw new MemberException(ErrorCode.DUPLICATE_WORKER_CODE);
+        }
+
+        Role role = getRole(RoleName.WH_WORKER);
+        Account account = new Account();
+        account.setAccountId(generateId("ACC"));
+        account.setRole(role);
+        account.setTenantId(request.getTenantId());
+        account.setWarehouseId(request.getWarehouseId());
+        account.setAccountName(request.getName());
+        account.setWorkerCode(request.getEmployeeNumber());
+        if (StringUtils.hasText(request.getEmail())) {
+            if (accountRepository.existsByEmail(request.getEmail())) {
+                throw new MemberException(ErrorCode.DUPLICATE_EMAIL);
+            }
+            account.setEmail(request.getEmail());
+        }
+        account.setPasswordHash(passwordService.encode(request.getEmployeeNumber()));
+        account.setAccountStatus(AccountStatus.ACTIVE);
+        account.setIsTemporaryPassword(Boolean.FALSE);
+        accountRepository.save(account);
+
+        InviteAccountResponse response = new InviteAccountResponse();
+        response.setInvitationId(null);
+        response.setRole(RoleName.WH_WORKER.name());
+        response.setTenantId(account.getTenantId());
+        response.setWarehouseId(account.getWarehouseId());
+        response.setName(account.getAccountName());
+        response.setEmail(account.getEmail());
+        response.setInviteStatus(AccountStatus.ACTIVE.name());
+        response.setInviteSentAt(LocalDateTime.now());
+        return response;
     }
 
     private void validateSetupToken(MemberToken memberToken) {

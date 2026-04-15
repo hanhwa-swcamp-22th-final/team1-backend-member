@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.conk.member.query.mapper.SellerMetricQueryMapper">
+
+    <select id="findSellerFeeSummary"
+            parameterType="com.conk.member.query.dto.request.SellerFeeSummaryRequest"
+            resultType="com.conk.member.query.dto.response.SellerFeeSummaryResponse">
+        SELECT
+            s.seller_id AS seller_code,
+            s.brand_name_ko AS seller_name,
+            CAST(0 AS DOUBLE) AS estimated_cost,
+            CAST(0 AS DOUBLE) AS mom_growth,
+            CAST(0 AS DOUBLE) AS turnover_rate
+        FROM seller s
+        <where>
+            <if test="tenantId != null and tenantId != ''">
+                s.tenant_id = #{tenantId}
+            </if>
+            <if test="sellerId != null and sellerId != ''">
+                AND s.seller_id = #{sellerId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    s.seller_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.brand_name_ko LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.brand_name_en LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY s.created_at DESC, s.seller_id ASC
+    </select>
+
+    <select id="findSellerRevenue"
+            parameterType="com.conk.member.query.dto.request.SellerRevenueRequest"
+            resultType="com.conk.member.query.dto.response.SellerRevenueResponse">
+        SELECT
+            s.seller_id AS seller_code,
+            s.brand_name_ko AS seller_name,
+            CAST(0 AS DOUBLE) AS month_revenue,
+            0 AS total_orders,
+            CAST(0 AS DOUBLE) AS avg_order_value
+        FROM seller s
+        <where>
+            <if test="tenantId != null and tenantId != ''">
+                s.tenant_id = #{tenantId}
+            </if>
+            <if test="sellerId != null and sellerId != ''">
+                AND s.seller_id = #{sellerId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    s.seller_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.brand_name_ko LIKE CONCAT('%', #{keyword}, '%')
+                    OR s.brand_name_en LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY s.created_at DESC, s.seller_id ASC
+    </select>
+
+    <select id="findSellerStats"
+            parameterType="com.conk.member.query.dto.request.SellerStatsRequest"
+            resultType="com.conk.member.query.dto.response.SellerStatsResponse">
+        SELECT
+            SUM(CASE WHEN s.status = 'ACTIVE' THEN 1 ELSE 0 END) AS active_seller_count,
+            SUM(CASE WHEN s.status = 'INACTIVE' THEN 1 ELSE 0 END) AS inactive_seller_count,
+            COUNT(*) AS total_seller_count
+        FROM seller s
+        <where>
+            <if test="tenantId != null and tenantId != ''">
+                s.tenant_id = #{tenantId}
+            </if>
+            <if test="status != null and status != ''">
+                AND s.status = #{status}
+            </if>
+        </where>
+    </select>
+
+</mapper>

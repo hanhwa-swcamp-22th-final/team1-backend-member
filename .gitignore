@@ -40,5 +40,5 @@ out/
 
 ### 환경 설정 파일 (DB 접속 정보 포함) ###
 application-local.yaml
-application-secret.yaml
+application-dev.yml
 1.env

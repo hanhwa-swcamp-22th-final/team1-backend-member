@@ -112,4 +112,24 @@ class AdminQueryControllerTest {
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.success").value(false));
   }
+
+
+  @Test
+  @DisplayName("업체 로그 목록 조회 성공 - 200 OK")
+  @WithMockUser(authorities = "SYSTEM_ADMIN")
+  void getCompanyLogs_success_returns200() throws Exception {
+    com.conk.member.command.application.dto.response.CompanyLogResponse item = new com.conk.member.command.application.dto.response.CompanyLogResponse();
+    item.setId("1712990000000");
+    item.setCompanyId("TENANT-001");
+    item.setActor("sys.admin@conk.com");
+    item.setAction("총괄 관리자 추가 발급");
+
+    given(adminQueryService.getCompanyLogs(any())).willReturn(List.of(item));
+
+    mockMvc.perform(get("/member/admin/company-logs").param("companyId", "TENANT-001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("1712990000000"))
+        .andExpect(jsonPath("$.data[0].actor").value("sys.admin@conk.com"));
+  }
+
 }

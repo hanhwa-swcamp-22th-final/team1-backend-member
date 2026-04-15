@@ -77,8 +77,11 @@
             GROUP BY tenant_id
         ) wc ON wc.tenant_id = t.tenant_id
         <where>
+            <if test="id != null and id != ''">
+                t.tenant_id = #{id}
+            </if>
             <if test="status != null and status != ''">
-                t.status = #{status}
+                AND t.status = #{status}
             </if>
             <if test="keyword != null and keyword != ''">
                 AND (

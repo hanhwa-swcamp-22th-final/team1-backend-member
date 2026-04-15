@@ -1,6 +1,7 @@
 -- 테스트용 인메모리 DB 스키마 (H2 MODE=MySQL)
 -- 엔티티 구조(ERD 기준)에 맞게 정렬
 
+DROP TABLE IF EXISTS company_log;
 DROP TABLE IF EXISTS role_permission_history;
 DROP TABLE IF EXISTS role_permission;
 DROP TABLE IF EXISTS permission;
@@ -157,4 +158,16 @@ CREATE TABLE role_permission_history (
     after_can_delete INTEGER,
     changed_by VARCHAR(100),
     changed_at TIMESTAMP
+);
+
+
+CREATE TABLE company_log (
+    company_log_id VARCHAR(50) PRIMARY KEY,
+    account_id VARCHAR(50),
+    tenant_id VARCHAR(50) NOT NULL,
+    actor_name VARCHAR(100) NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    action_summary VARCHAR(255) NOT NULL,
+    action_detail VARCHAR(255),
+    created_at TIMESTAMP
 );

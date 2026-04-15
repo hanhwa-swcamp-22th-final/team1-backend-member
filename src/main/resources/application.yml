@@ -47,7 +47,7 @@ mybatis:
 jwt:
   # Docker: JWT_SECRET 환경변수로 주입
   # 로컬 직접 실행: 아래 개발 전용 예시 키 사용 (원문: "conk-development-secret-key-at-least-32-bytes!!")
-  secret: ${JWT_SECRET:conk-development-secret-key-at-least-32-bytes!!"}
+  secret: ${JWT_SECRET:Y29uay1kZXZlbG9wbWVudC1zZWNyZXQta2V5LWF0LWxlYXN0LTMyLWJ5dGVzISE=}
   expiration: ${JWT_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
