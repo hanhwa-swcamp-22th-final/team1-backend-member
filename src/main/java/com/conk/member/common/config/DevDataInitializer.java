@@ -34,7 +34,7 @@ public class DevDataInitializer implements ApplicationRunner {
     private static final String DEFAULT_PASSWORD = "1234";
 
     private static final String DEMO_TENANT_ID = "TENANT-DEMO-001";
-    private static final String DEMO_TENANT_CODE = "TEN-CONK-DEMO-001";
+    private static final String DEMO_TENANT_CODE = "TEN-001";
     private static final String DEMO_SELLER_ID = "SELLER-DEMO-001";
     private static final String DEMO_WAREHOUSE_ID = "WH-001";
 
@@ -152,7 +152,7 @@ public class DevDataInitializer implements ApplicationRunner {
                     Seller seller = new Seller();
                     seller.setSellerId(DEMO_SELLER_ID);
                     seller.setTenantId(tenant.getTenantId());
-                    seller.setCustomerCode("CUST-DEMO-001");
+                    seller.setCustomerCode("CUST-000001");
                     seller.setSellerInfo("기본 데모 셀러");
                     seller.setBrandNameKo("CONK 데모 셀러");
                     seller.setBrandNameEn("CONK Demo Seller");

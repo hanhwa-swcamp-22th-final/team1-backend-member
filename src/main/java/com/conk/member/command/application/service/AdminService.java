@@ -53,6 +53,7 @@ public class AdminService {
     private final PasswordService passwordService;
     private final TokenService tokenService;
     private final MailService mailService;
+    private final BusinessCodeGenerator businessCodeGenerator;
 
     public AdminService(AccountRepository accountRepository,
                         InvitationRepository invitationRepository,
@@ -62,7 +63,8 @@ public class AdminService {
                         MemberTokenRepository memberTokenRepository,
                         PasswordService passwordService,
                         TokenService tokenService,
-                        MailService mailService) {
+                        MailService mailService,
+                        BusinessCodeGenerator businessCodeGenerator) {
         this.accountRepository = accountRepository;
         this.invitationRepository = invitationRepository;
         this.roleRepository = roleRepository;
@@ -72,6 +74,7 @@ public class AdminService {
         this.passwordService = passwordService;
         this.tokenService = tokenService;
         this.mailService = mailService;
+        this.businessCodeGenerator = businessCodeGenerator;
     }
 
     // ─── createAdminUser ──────────────────────────────────────────────────────
@@ -158,7 +161,7 @@ public class AdminService {
     public CreateCompanyResponse createCompany(CreateCompanyRequest request) {
         Tenant tenant = new Tenant();
         tenant.setTenantId(generateId("TENANT"));
-        tenant.setTenantCode(generateCode("TEN"));
+        tenant.setTenantCode(businessCodeGenerator.nextTenantCode());
         tenant.setTenantName(request.getTenantName());
         tenant.setRepresentativeName(request.getRepresentativeName());
         tenant.setBusinessNo(request.getBusinessNo());

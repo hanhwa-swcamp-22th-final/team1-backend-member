@@ -13,8 +13,6 @@ import com.conk.member.common.exception.MemberException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Service
 @Transactional
 public class CreateSellerCommandService {
@@ -22,13 +20,16 @@ public class CreateSellerCommandService {
     private final SellerRepository sellerRepository;
     private final SellerWarehouseRepository sellerWarehouseRepository;
     private final WarehouseService warehouseService;
+    private final BusinessCodeGenerator businessCodeGenerator;
 
     public CreateSellerCommandService(SellerRepository sellerRepository,
                                       SellerWarehouseRepository sellerWarehouseRepository,
-                                      WarehouseService warehouseService) {
+                                      WarehouseService warehouseService,
+                                      BusinessCodeGenerator businessCodeGenerator) {
         this.sellerRepository = sellerRepository;
         this.sellerWarehouseRepository = sellerWarehouseRepository;
         this.warehouseService = warehouseService;
+        this.businessCodeGenerator = businessCodeGenerator;
     }
 
     public CreateSellerResponse createSeller(CreateSellerRequest request) {
@@ -41,7 +42,7 @@ public class CreateSellerCommandService {
         }
 
         Seller seller = new Seller();
-        seller.setSellerId(generateId("SELLER"));
+        seller.setSellerId(businessCodeGenerator.nextSellerId());
         seller.setTenantId(request.getTenantId());
         seller.setSellerInfo(request.getSellerInfo());
         seller.setBrandNameKo(request.getBrandNameKo());
@@ -52,7 +53,7 @@ public class CreateSellerCommandService {
         seller.setEmail(request.getEmail());
         seller.setCategoryName(request.getCategoryName());
         seller.setStatus(SellerStatus.ACTIVE);
-        seller.setCustomerCode(generateCode("CUST"));
+        seller.setCustomerCode(businessCodeGenerator.nextCustomerCode());
         sellerRepository.save(seller);
 
         if (request.getWarehouseIds() != null) {
@@ -72,13 +73,5 @@ public class CreateSellerCommandService {
         response.setStatus(seller.getStatus().name());
         response.setCreatedAt(seller.getCreatedAt());
         return response;
-    }
-
-    private String generateId(String prefix) {
-        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8);
-    }
-
-    private String generateCode(String prefix) {
-        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }
