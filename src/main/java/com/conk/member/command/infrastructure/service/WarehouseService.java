@@ -22,6 +22,7 @@ public class WarehouseService {
 
     private static final Logger log = LoggerFactory.getLogger(WarehouseService.class);
 
+    private static final String HEADER_INTERNAL_CALL = "X-Internal-Call";
     private static final String HEADER_USER_ID = "X-USER-ID";
     private static final String HEADER_USER_NAME = "X-USER-NAME";
     private static final String HEADER_SELLER_ID = "X-SELLER-ID";
@@ -49,6 +50,7 @@ public class WarehouseService {
                 .uri(URI.create(trimSlash(warehouseBaseUrl) + "/warehouses/" + encodedId))
                 .GET();
 
+        builder.header(HEADER_INTERNAL_CALL, "true");
         copyIdentityHeaders(builder);
 
         HttpRequest request = builder.build();
