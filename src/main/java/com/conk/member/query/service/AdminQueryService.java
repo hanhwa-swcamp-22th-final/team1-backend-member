@@ -1,7 +1,10 @@
 package com.conk.member.query.service;
 
+import com.conk.member.command.domain.aggregate.Seller;
 import com.conk.member.command.domain.repository.AccountRepository;
+import com.conk.member.command.domain.repository.SellerRepository;
 import com.conk.member.command.domain.repository.SellerWarehouseRepository;
+import com.conk.member.command.infrastructure.service.WmsWarehouseClient;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
 import com.conk.member.query.dto.request.AdminUserListRequest;
@@ -9,7 +12,9 @@ import com.conk.member.query.dto.request.CompanyDetailRequest;
 import com.conk.member.query.dto.request.CompanyListRequest;
 import com.conk.member.query.dto.response.AdminUserListResponse;
 import com.conk.member.query.dto.response.CompanyDetailResponse;
+import com.conk.member.query.dto.response.CompanyDetailResponse.WarehouseItem;
 import com.conk.member.query.dto.response.CompanyListResponse;
+import com.conk.member.query.dto.response.WmsWarehouseItem;
 import com.conk.member.query.mapper.CompanyQueryMapper;
 import com.conk.member.query.mapper.MemberUserQueryMapper;
 import org.springframework.stereotype.Service;
@@ -18,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
@@ -27,15 +33,21 @@ public class AdminQueryService {
     private final CompanyQueryMapper companyQueryMapper;
     private final AccountRepository accountRepository;
     private final SellerWarehouseRepository sellerWarehouseRepository;
+    private final SellerRepository sellerRepository;
+    private final WmsWarehouseClient wmsWarehouseClient;
 
     public AdminQueryService(MemberUserQueryMapper memberUserQueryMapper,
                              CompanyQueryMapper companyQueryMapper,
                              AccountRepository accountRepository,
-                             SellerWarehouseRepository sellerWarehouseRepository) {
+                             SellerWarehouseRepository sellerWarehouseRepository,
+                             SellerRepository sellerRepository,
+                             WmsWarehouseClient wmsWarehouseClient) {
         this.memberUserQueryMapper = memberUserQueryMapper;
         this.companyQueryMapper = companyQueryMapper;
         this.accountRepository = accountRepository;
         this.sellerWarehouseRepository = sellerWarehouseRepository;
+        this.sellerRepository = sellerRepository;
+        this.wmsWarehouseClient = wmsWarehouseClient;
     }
 
     // ─── getAdminUsers ────────────────────────────────────────────────────────
@@ -79,6 +91,26 @@ public class AdminQueryService {
         detail.setCompanyType(item.getCompanyType());
         detail.setSellerCount(item.getSellerCount());
         detail.setUserCount(item.getUserCount());
+
+        // ① 셀러 회사명 목록 — member DB 내부 조회 (brandNameKo)
+        List<String> sellerCompanyList = sellerRepository
+                .search(detail.getId(), null, null)
+                .stream()
+                .map(Seller::getBrandNameKo)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        detail.setSellerCompanyList(sellerCompanyList);
+
+        // ② 창고 목록 — wms-service 내부 HTTP 호출 (X-Internal-Call: true)
+        List<WarehouseItem> warehouseList = wmsWarehouseClient
+                .findWarehousesByTenantId(detail.getId())
+                .stream()
+                .map(w -> new WarehouseItem(w.getCode(), w.getName(), w.getStatus()))
+                .toList();
+        detail.setWarehouseList(warehouseList);
+
         return detail;
     }
 
