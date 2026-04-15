@@ -434,8 +434,7 @@ public class MailServiceImpl implements MailService {
     }
 
     private String buildSetupUrl(String rawToken) {
-        String base = defaultIfBlank(mailProperties.getSetupBaseUrl(), "http://localhost:3000/member/setup-password");
-        return base + "?token=" + rawToken;
+        return mailProperties.getSetupBaseUrl() + "?token=" + rawToken;
     }
 
     private String escapeHtml(String value) {

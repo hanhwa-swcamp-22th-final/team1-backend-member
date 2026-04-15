@@ -68,6 +68,6 @@ management:
 
 warehouse:
   service:
-    # Docker: http://wms-service:8080
-    # 로컬 직접 실행: http://localhost:${WMS_LOCAL_PORT:8084}
-    base-url: ${WAREHOUSE_SERVICE_BASE_URL:http://wms-service:8080}
+    # Docker: WAREHOUSE_SERVICE_URL=http://wms-service:8080
+    # 로컬 직접 실행: http://localhost:8083
+    base-url: ${WAREHOUSE_SERVICE_URL:http://localhost:8083}
