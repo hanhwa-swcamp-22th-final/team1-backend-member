@@ -82,8 +82,8 @@ public class SecurityConfig {
         // 브라우저 preflight 요청 허용
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-        // 헬스체크 (Docker healthcheck + 모니터링)
-        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+        // 헬스체크 (Docker healthcheck + k8s probe)
+        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness").permitAll()
 
         // 인증 없이 허용할 API
         .requestMatchers(
