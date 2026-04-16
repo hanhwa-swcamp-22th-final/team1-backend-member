@@ -37,10 +37,11 @@ class SellerQueryServiceTest {
         item.setStatus("ACTIVE");
 
         SellerWarehouse sw = new SellerWarehouse();
+        sw.setSellerId("SELLER-001");
         sw.setWarehouseId("WH-001");
 
         given(sellerQueryMapper.findSellers(any())).willReturn(List.of(item));
-        given(sellerWarehouseRepository.findBySellerIdOrderByWarehouseIdAsc("SELLER-001"))
+        given(sellerWarehouseRepository.findBySellerIdInOrderBySellerIdAscWarehouseIdAsc(List.of("SELLER-001")))
                 .willReturn(List.of(sw));
 
         List<SellerListResponse> result = sellerQueryService.getSellerList(new SellerListRequest());
@@ -59,7 +60,7 @@ class SellerQueryServiceTest {
         item.setStatus("ACTIVE");
 
         given(sellerQueryMapper.findSellers(any())).willReturn(List.of(item));
-        given(sellerWarehouseRepository.findBySellerIdOrderByWarehouseIdAsc("SELLER-001"))
+        given(sellerWarehouseRepository.findBySellerIdInOrderBySellerIdAscWarehouseIdAsc(List.of("SELLER-001")))
                 .willReturn(List.of());
 
         List<SellerListResponse> result = sellerQueryService.getSellerList(new SellerListRequest());
@@ -83,12 +84,18 @@ class SellerQueryServiceTest {
         SellerListRequest request = new SellerListRequest();
         request.setTenantId("TENANT-001");
         request.setStatus("ACTIVE");
+        request.setKeyword("  aurora  ");
 
-        given(sellerQueryMapper.findSellers(request)).willReturn(List.of());
+        SellerListRequest normalizedRequest = new SellerListRequest();
+        normalizedRequest.setTenantId("TENANT-001");
+        normalizedRequest.setStatus("ACTIVE");
+        normalizedRequest.setKeyword("aurora");
+
+        given(sellerQueryMapper.findSellers(any())).willReturn(List.of());
 
         List<SellerListResponse> result = sellerQueryService.getSellerList(request);
 
         assertThat(result).isEmpty();
-        then(sellerQueryMapper).should().findSellers(request);
+        then(sellerQueryMapper).should().findSellers(refEq(normalizedRequest));
     }
 }
