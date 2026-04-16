@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface SellerRepository extends JpaRepository<Seller, String> {
+    boolean existsByCustomerCode(String customerCode);
+
     @Query("select s from Seller s where (:tenantId is null or s.tenantId = :tenantId) and (:status is null or s.status = :status) and (:keyword is null or s.brandNameKo like concat('%', :keyword, '%') or s.brandNameEn like concat('%', :keyword, '%') or s.representativeName like concat('%', :keyword, '%'))")
     List<Seller> search(@Param("tenantId") String tenantId, @Param("status") String status, @Param("keyword") String keyword);
 }

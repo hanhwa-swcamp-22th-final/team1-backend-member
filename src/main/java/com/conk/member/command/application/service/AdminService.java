@@ -110,7 +110,7 @@ public class AdminService {
 
         String companyName = tenantRepository.findById(request.getTenantId())
                 .map(Tenant::getTenantName).orElse("");
-        mailService.sendInviteMail(request.getEmail(), request.getName(),
+        mailService.sendPasswordResetMail(request.getEmail(), request.getName(),
                 RoleName.MASTER_ADMIN.name(), companyName, temporaryPassword);
 
         CreateAdminUserResponse response = new CreateAdminUserResponse();

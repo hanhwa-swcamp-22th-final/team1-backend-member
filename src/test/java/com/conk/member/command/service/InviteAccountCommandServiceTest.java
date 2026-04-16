@@ -94,7 +94,7 @@ class InviteAccountCommandServiceTest {
         given(tenantRepository.findById("TENANT-001")).willReturn(Optional.of(tenant));
         willDoNothing().given(mailService).sendInviteMail(any(), any(), any(), any(), any());
 
-        InviteAccountResponse response = authService.invite(warehouseManagerRequest, "ACC-INVITER");
+        InviteAccountResponse response = authService.invite(warehouseManagerRequest, "ACC-INVITER", "TENANT-001");
 
         assertThat(response.getRole()).isEqualTo(RoleName.WH_MANAGER.name());
         assertThat(response.getEmail()).isEqualTo("manager@example.com");
@@ -122,7 +122,7 @@ class InviteAccountCommandServiceTest {
         given(tenantRepository.findById("TENANT-001")).willReturn(Optional.of(tenant));
         willDoNothing().given(mailService).sendInviteMail(any(), any(), any(), any(), any());
 
-        InviteAccountResponse response = authService.invite(sellerRequest, "ACC-INVITER");
+        InviteAccountResponse response = authService.invite(sellerRequest, "ACC-INVITER", "TENANT-001");
 
         assertThat(response.getRole()).isEqualTo(RoleName.SELLER.name());
         assertThat(response.getEmail()).isEqualTo("seller@example.com");
@@ -131,7 +131,7 @@ class InviteAccountCommandServiceTest {
     @Test
     @DisplayName("초대자 ID 없으면 예외 발생")
     void invite_noInviterId_throwsException() {
-        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, null))
+        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, null, "TENANT-001"))
                 .isInstanceOf(MemberException.class)
                 .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
     }
@@ -141,7 +141,7 @@ class InviteAccountCommandServiceTest {
     void invite_workerRole_throwsException() {
         warehouseManagerRequest.setRole("WH_WORKER");
 
-        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER"))
+        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER", "TENANT-001"))
                 .isInstanceOf(MemberException.class)
                 .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.ROLE_SCOPE_RESTRICTED));
     }
@@ -151,7 +151,7 @@ class InviteAccountCommandServiceTest {
     void invite_duplicateEmail_throwsException() {
         given(accountRepository.existsByEmail("manager@example.com")).willReturn(true);
 
-        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER"))
+        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER", "TENANT-001"))
                 .isInstanceOf(MemberException.class)
                 .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_EMAIL));
     }
@@ -162,7 +162,7 @@ class InviteAccountCommandServiceTest {
         given(accountRepository.existsByEmail("manager@example.com")).willReturn(false);
         given(warehouseService.exists("WH-001")).willReturn(false);
 
-        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER"))
+        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER", "TENANT-001"))
                 .isInstanceOf(MemberException.class)
                 .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_REFERENCE));
     }
@@ -173,7 +173,7 @@ class InviteAccountCommandServiceTest {
         given(accountRepository.existsByEmail("seller@example.com")).willReturn(false);
         given(sellerRepository.findById("SELLER-001")).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.invite(sellerRequest, "ACC-INVITER"))
+        assertThatThrownBy(() -> authService.invite(sellerRequest, "ACC-INVITER", "TENANT-001"))
                 .isInstanceOf(MemberException.class)
                 .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_REFERENCE));
     }
@@ -183,7 +183,7 @@ class InviteAccountCommandServiceTest {
     void invite_invalidRoleName_throwsException() {
         warehouseManagerRequest.setRole("INVALID_ROLE");
 
-        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER"))
+        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER", "TENANT-001"))
                 .isInstanceOf(MemberException.class)
                 .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST));
     }
