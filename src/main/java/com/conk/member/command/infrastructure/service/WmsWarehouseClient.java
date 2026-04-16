@@ -1,21 +1,15 @@
 package com.conk.member.command.infrastructure.service;
 
+import com.conk.member.command.infrastructure.client.feign.WmsWarehouseFeignClient;
+import com.conk.member.common.util.ApiResponse;
 import com.conk.member.query.dto.response.WmsWarehouseItem;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
 
 /**
@@ -32,19 +26,14 @@ public class WmsWarehouseClient {
 
     private static final Logger log = LoggerFactory.getLogger(WmsWarehouseClient.class);
 
-    private static final String HEADER_INTERNAL_CALL = "X-Internal-Call";
-    private static final String HEADER_TENANT_ID = "X-Tenant-Id";
-
-    private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
+    private final WmsWarehouseFeignClient wmsWarehouseFeignClient;
     private final String wmsBaseUrl;
 
     public WmsWarehouseClient(
+            WmsWarehouseFeignClient wmsWarehouseFeignClient,
             @Value("${warehouse.service.base-url:}") String wmsBaseUrl
     ) {
+        this.wmsWarehouseFeignClient = wmsWarehouseFeignClient;
         this.wmsBaseUrl = wmsBaseUrl;
     }
 
@@ -59,44 +48,15 @@ public class WmsWarehouseClient {
             return List.of();
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(trimSlash(wmsBaseUrl) + "/wms/warehouses"))
-                .header(HEADER_INTERNAL_CALL, "true")
-                .header(HEADER_TENANT_ID, tenantId)
-                .GET()
-                .build();
-
         try {
-            HttpResponse<String> response =
-                    httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("WMS 창고 목록 조회 실패: tenantId={} status={}", tenantId, response.statusCode());
+            ApiResponse<List<WmsWarehouseItem>> response = wmsWarehouseFeignClient.getWarehouses();
+            if (response == null || !response.isSuccess() || response.getData() == null) {
                 return List.of();
             }
-
-            // wms-service ApiResponse 구조: { "success": true, "data": [...] }
-            JsonNode dataNode = objectMapper.readTree(response.body()).path("data");
-            if (dataNode.isMissingNode() || dataNode.isNull()) {
-                return List.of();
-            }
-
-            return objectMapper.convertValue(
-                    dataNode,
-                    objectMapper.getTypeFactory()
-                            .constructCollectionType(List.class, WmsWarehouseItem.class)
-            );
-
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            log.warn("WMS 창고 목록 조회 중 오류 발생: tenantId={} message={}", tenantId, e.getMessage());
+            return response.getData();
+        } catch (FeignException exception) {
+            log.warn("WMS 창고 목록 조회 중 오류 발생: tenantId={} message={}", tenantId, exception.getMessage());
             return List.of();
         }
-    }
-
-    private String trimSlash(String value) {
-        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 }
