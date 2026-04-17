@@ -15,8 +15,7 @@ import java.util.List;
 /**
  * wms-service의 GET /wms/warehouses 를 내부 호출로 사용하는 HTTP 클라이언트다.
  *
- * <p>Nginx /_auth 검증을 우회하기 위해 {@code X-Internal-Call: true} 헤더를 포함한다.
- * wms-service의 AuthContextResolver는 {@code X-Tenant-Id} 헤더를 읽어 tenantId를 주입하므로,
+ * <p>wms-service의 AuthContextResolver는 {@code X-Tenant-Id} 헤더를 읽어 tenantId를 주입하므로,
  * JWT 없이도 창고 목록을 조회할 수 있다.
  *
  * <p>wms-service 장애 또는 응답 오류 시 빈 리스트를 반환해 서비스 전체가 중단되지 않도록 한다.

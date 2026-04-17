@@ -103,7 +103,7 @@ public class AdminQueryService {
                 .toList();
         detail.setSellerCompanyList(sellerCompanyList);
 
-        // ② 창고 목록 — wms-service 내부 HTTP 호출 (X-Internal-Call: true)
+        // ② 창고 목록 — wms-service 내부 HTTP 호출
         List<WarehouseItem> warehouseList = wmsWarehouseClient
                 .findWarehousesByTenantId(detail.getId())
                 .stream()

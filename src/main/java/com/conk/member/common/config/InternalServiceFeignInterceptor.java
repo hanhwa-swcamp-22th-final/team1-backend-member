@@ -15,7 +15,6 @@ import org.springframework.util.StringUtils;
 @Configuration
 public class InternalServiceFeignInterceptor {
 
-    private static final String HEADER_INTERNAL_CALL = "X-Internal-Call";
     private static final String HEADER_USER_ID = "X-USER-ID";
     private static final String HEADER_USER_NAME = "X-USER-NAME";
     private static final String HEADER_SELLER_ID = "X-SELLER-ID";
@@ -28,8 +27,6 @@ public class InternalServiceFeignInterceptor {
     }
 
     private void applyHeaders(RequestTemplate template) {
-        template.header(HEADER_INTERNAL_CALL, "true");
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof MemberUserPrincipal principal)) {
             return;
