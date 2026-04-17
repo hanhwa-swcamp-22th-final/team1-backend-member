@@ -1,6 +1,7 @@
 package com.conk.member.command.controller;
 
 import com.conk.member.command.application.controller.AuthController;
+import com.conk.member.command.application.dto.response.ChangePasswordResponse;
 import com.conk.member.command.application.dto.response.InviteAccountResponse;
 import com.conk.member.command.application.dto.response.LoginResponse;
 import com.conk.member.command.application.dto.response.SetupPasswordResponse;
@@ -262,6 +263,40 @@ class AuthControllerTest {
                                 Map.of("setupToken", "expired-token", "newPassword", "newPass123!")))
                         .with(csrf()))
                 .andExpect(status().isGone())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("임시 비밀번호 변경 성공 - 200 OK")
+    void changePassword_success_returns200() throws Exception {
+        ChangePasswordResponse response = new ChangePasswordResponse();
+        response.setAccountId("ACC-001");
+        response.setAccountStatus("ACTIVE");
+
+        given(authService.changePassword(any(), any())).willReturn(response);
+
+        mockMvc.perform(post("/member/auth/change-password")
+                        .with(authentication(memberAuthentication("ACC-001")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("newPassword", "newPass123!")))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"));
+    }
+
+    @Test
+    @DisplayName("임시 비밀번호 상태가 아니면 변경 요청은 403 Forbidden")
+    void changePassword_nonTempAccount_returns403() throws Exception {
+        given(authService.changePassword(any(), any()))
+                .willThrow(new MemberException(ErrorCode.FORBIDDEN));
+
+        mockMvc.perform(post("/member/auth/change-password")
+                        .with(authentication(memberAuthentication("ACC-001")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("newPassword", "newPass123!")))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false));
     }
 }

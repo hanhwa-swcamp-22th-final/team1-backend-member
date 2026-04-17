@@ -2,11 +2,15 @@ package com.conk.member.command.application.controller;
 
 import com.conk.member.command.application.dto.request.InviteAccountRequest;
 import com.conk.member.command.application.dto.request.LoginRequest;
+import com.conk.member.command.application.dto.request.ChangePasswordRequest;
 import com.conk.member.command.application.dto.request.SetupPasswordRequest;
+import com.conk.member.command.application.dto.response.ChangePasswordResponse;
 import com.conk.member.command.application.dto.response.InviteAccountResponse;
 import com.conk.member.command.application.dto.response.LoginResponse;
 import com.conk.member.command.application.dto.response.SetupPasswordResponse;
 import com.conk.member.command.application.service.AuthService;
+import com.conk.member.common.exception.ErrorCode;
+import com.conk.member.common.exception.MemberException;
 import com.conk.member.common.security.MemberUserPrincipal;
 import com.conk.member.common.util.ApiResponse;
 import org.springframework.http.HttpHeaders;
@@ -80,6 +84,20 @@ public class AuthController {
     @PostMapping("/setup-password")
     public ResponseEntity<ApiResponse<SetupPasswordResponse>> setupPassword(@RequestBody SetupPasswordRequest request) {
         return ResponseEntity.ok(ApiResponse.ok("setup password", authService.setupPassword(request)));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<ChangePasswordResponse>> changePassword(
+            @AuthenticationPrincipal MemberUserPrincipal principal,
+            @RequestBody ChangePasswordRequest request) {
+        if (principal == null) {
+            throw new MemberException(ErrorCode.UNAUTHORIZED);
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok(
+                "password changed",
+                authService.changePassword(principal.getAccountId(), request)
+        ));
     }
 
     private ResponseEntity<ApiResponse<LoginResponse>> buildTokenResponse(String message, LoginResponse response) {

@@ -2,7 +2,9 @@ package com.conk.member.command.application.service;
 
 import com.conk.member.command.application.dto.request.InviteAccountRequest;
 import com.conk.member.command.application.dto.request.LoginRequest;
+import com.conk.member.command.application.dto.request.ChangePasswordRequest;
 import com.conk.member.command.application.dto.request.SetupPasswordRequest;
+import com.conk.member.command.application.dto.response.ChangePasswordResponse;
 import com.conk.member.command.application.dto.response.InviteAccountResponse;
 import com.conk.member.command.application.dto.response.LoginResponse;
 import com.conk.member.command.application.dto.response.SetupPasswordResponse;
@@ -175,7 +177,7 @@ public class AuthService {
         invitation.setTenantId(inviterTenantId);                 // FE는 tenantId 미전송 → 초대자 tenantId 사용
         invitation.setSellerId(request.getSellerId());
         invitation.setWarehouseId(request.getWarehouseId());
-        invitation.setInviteEmail(request.getEmail());
+        invitation.setInviteEmail(resolveInviteRecipient(roleName, request));
         invitation.markPending();
         invitationRepository.save(invitation);
 
@@ -207,6 +209,24 @@ public class AuthService {
         memberTokenRepository.save(memberToken);
 
         return buildSetupPasswordResponse(account);
+    }
+
+    public ChangePasswordResponse changePassword(String accountId, ChangePasswordRequest request) {
+        if (!StringUtils.hasText(accountId)) {
+            throw new MemberException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND));
+
+        if (account.getAccountStatus() != AccountStatus.TEMP_PASSWORD) {
+            throw new MemberException(ErrorCode.FORBIDDEN, "임시 비밀번호 상태의 계정만 비밀번호를 변경할 수 있습니다.");
+        }
+
+        account.changePassword(passwordService.encode(request.getNewPassword()));
+        accountRepository.save(account);
+
+        return buildChangePasswordResponse(account);
     }
 
     // ─── private helpers ──────────────────────────────────────────────────────
@@ -332,7 +352,7 @@ public class AuthService {
         response.setSellerId(invitation.getSellerId());
         response.setWarehouseId(invitation.getWarehouseId());
         response.setName(account.getAccountName());
-        response.setEmail(invitation.getInviteEmail());
+        response.setEmail(account.getEmail());
         response.setWorkerCode(account.getWorkerCode());     // WH_WORKER 이외 역할은 null
         response.setInviteStatus(invitation.getInviteStatus().name());
         response.setInviteSentAt(invitation.getInviteSentAt());
@@ -355,6 +375,14 @@ public class AuthService {
             response.setTenantStatus(tenant.getStatus().name());
             response.setActivatedAt(tenant.getActivatedAt());
         }
+        return response;
+    }
+
+    private ChangePasswordResponse buildChangePasswordResponse(Account account) {
+        ChangePasswordResponse response = new ChangePasswordResponse();
+        response.setAccountId(account.getAccountId());
+        response.setAccountStatus(account.getAccountStatus().name());
+        response.setPasswordChangedAt(account.getPasswordChangedAt());
         return response;
     }
 
@@ -389,5 +417,12 @@ public class AuthService {
         if (accountRepository.existsByWorkerCode(workerCode)) {
             throw new MemberException(ErrorCode.DUPLICATE_WORKER_CODE, "이미 사용 중인 사번입니다.");
         }
+    }
+
+    private String resolveInviteRecipient(RoleName roleName, InviteAccountRequest request) {
+        if (roleName == RoleName.WH_WORKER) {
+            return request.getEmployeeNumber();
+        }
+        return request.getEmail();
     }
 }
