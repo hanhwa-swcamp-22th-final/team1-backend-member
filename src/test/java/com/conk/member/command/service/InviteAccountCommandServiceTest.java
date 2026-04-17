@@ -48,8 +48,10 @@ class InviteAccountCommandServiceTest {
     @InjectMocks AuthService authService;
 
     private Role warehouseManagerRole;
+    private Role warehouseWorkerRole;
     private Role sellerRole;
     private InviteAccountRequest warehouseManagerRequest;
+    private InviteAccountRequest warehouseWorkerRequest;
     private InviteAccountRequest sellerRequest;
 
     @BeforeEach
@@ -57,6 +59,10 @@ class InviteAccountCommandServiceTest {
         warehouseManagerRole = new Role();
         warehouseManagerRole.setRoleId("ROLE-002");
         warehouseManagerRole.setRoleName(RoleName.WH_MANAGER);
+
+        warehouseWorkerRole = new Role();
+        warehouseWorkerRole.setRoleId("ROLE-003");
+        warehouseWorkerRole.setRoleName(RoleName.WH_WORKER);
 
         sellerRole = new Role();
         sellerRole.setRoleId("ROLE-004");
@@ -68,6 +74,13 @@ class InviteAccountCommandServiceTest {
         warehouseManagerRequest.setWarehouseId("WH-001");
         warehouseManagerRequest.setName("창고관리자");
         warehouseManagerRequest.setEmail("manager@example.com");
+
+        warehouseWorkerRequest = new InviteAccountRequest();
+        warehouseWorkerRequest.setRole("WH_WORKER");
+        warehouseWorkerRequest.setTenantId("TENANT-001");
+        warehouseWorkerRequest.setWarehouseId("WH-001");
+        warehouseWorkerRequest.setName("창고작업자");
+        warehouseWorkerRequest.setEmployeeNumber("WW-1001");
 
         sellerRequest = new InviteAccountRequest();
         sellerRequest.setRole("SELLER");
@@ -137,13 +150,22 @@ class InviteAccountCommandServiceTest {
     }
 
     @Test
-    @DisplayName("WH_WORKER 역할 초대 시도 시 예외 발생")
-    void invite_workerRole_throwsException() {
-        warehouseManagerRequest.setRole("WH_WORKER");
+    @DisplayName("WH_WORKER 발급 성공")
+    void invite_worker_success() {
+        given(accountRepository.existsByWorkerCode("WW-1001")).willReturn(false);
+        given(warehouseService.exists("WH-001")).willReturn(true);
+        given(roleRepository.findByRoleName(RoleName.WH_WORKER)).willReturn(Optional.of(warehouseWorkerRole));
+        given(passwordService.generateTemporaryPassword()).willReturn("Temp@1234");
+        given(passwordService.encode("WW-1001")).willReturn("$2a$workerEncoded");
+        given(accountRepository.save(any(Account.class))).willAnswer(inv -> inv.getArgument(0));
+        given(invitationRepository.save(any(Invitation.class))).willAnswer(inv -> inv.getArgument(0));
 
-        assertThatThrownBy(() -> authService.invite(warehouseManagerRequest, "ACC-INVITER", "TENANT-001"))
-                .isInstanceOf(MemberException.class)
-                .satisfies(e -> assertThat(((MemberException) e).getErrorCode()).isEqualTo(ErrorCode.ROLE_SCOPE_RESTRICTED));
+        InviteAccountResponse response = authService.invite(warehouseWorkerRequest, "ACC-INVITER", "TENANT-001");
+
+        assertThat(response.getRole()).isEqualTo(RoleName.WH_WORKER.name());
+        assertThat(response.getEmail()).isNull();
+        assertThat(response.getWorkerCode()).isEqualTo("WW-1001");
+        then(mailService).shouldHaveNoInteractions();
     }
 
     @Test
