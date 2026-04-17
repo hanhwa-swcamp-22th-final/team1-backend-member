@@ -5,6 +5,8 @@ import com.conk.member.common.exception.MemberException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -33,8 +35,8 @@ public class MailServiceImpl implements MailService {
                                String temporaryPassword) {
 
         String subject = createInviteSubject();
-        String htmlContent = createInviteHtml(name, role, companyName, temporaryPassword);
-        String textContent = createInviteText(name, role, companyName, temporaryPassword);
+        String htmlContent = createInviteHtml(to, name, role, companyName, temporaryPassword);
+        String textContent = createInviteText(to, name, role, companyName, temporaryPassword);
         sendMime(to, subject, textContent, htmlContent);
     }
 
@@ -46,8 +48,8 @@ public class MailServiceImpl implements MailService {
                                       String temporaryPassword) {
 
         String subject = createResetSubject();
-        String htmlContent = createResetHtml(name, role, companyName, temporaryPassword);
-        String textContent = createResetText(name, role, companyName, temporaryPassword);
+        String htmlContent = createResetHtml(to, name, role, companyName, temporaryPassword);
+        String textContent = createResetText(to, name, role, companyName, temporaryPassword);
         sendMime(to, subject, textContent, htmlContent);
     }
 
@@ -70,8 +72,8 @@ public class MailServiceImpl implements MailService {
         return "[" + serviceName + "] 계정 초대 안내";
     }
 
-    private String createInviteText(String name, String role, String companyName, String temporaryPassword) {
-        String loginUrl = defaultIfBlank(mailProperties.getLoginUrl(), "");
+    private String createInviteText(String email, String name, String role, String companyName, String temporaryPassword) {
+        String loginUrl = buildInviteLoginUrl(email);
         String serviceName = defaultIfBlank(mailProperties.getServiceName(), "CONK");
 
         return """
@@ -97,12 +99,12 @@ public class MailServiceImpl implements MailService {
         );
     }
 
-    private String createInviteHtml(String name, String role, String companyName, String temporaryPassword) {
+    private String createInviteHtml(String email, String name, String role, String companyName, String temporaryPassword) {
         String safeName = escapeHtml(name);
         String safeRole = escapeHtml(role);
         String safeCompanyName = escapeHtml(companyName);
         String safeTemporaryPassword = escapeHtml(temporaryPassword);
-        String safeLoginUrl = escapeHtml(defaultIfBlank(mailProperties.getLoginUrl(), "#"));
+        String safeLoginUrl = escapeHtml(buildInviteLoginUrl(email));
         String safeServiceName = escapeHtml(defaultIfBlank(mailProperties.getServiceName(), "CONK"));
 
         return """
@@ -194,8 +196,8 @@ public class MailServiceImpl implements MailService {
         return "[" + serviceName + "] 임시 비밀번호 안내";
     }
 
-    private String createResetText(String name, String role, String companyName, String temporaryPassword) {
-        String loginUrl = defaultIfBlank(mailProperties.getLoginUrl(), "");
+    private String createResetText(String email, String name, String role, String companyName, String temporaryPassword) {
+        String loginUrl = buildInviteLoginUrl(email);
         String serviceName = defaultIfBlank(mailProperties.getServiceName(), "CONK");
 
         return """
@@ -221,12 +223,12 @@ public class MailServiceImpl implements MailService {
         );
     }
 
-    private String createResetHtml(String name, String role, String companyName, String temporaryPassword) {
+    private String createResetHtml(String email, String name, String role, String companyName, String temporaryPassword) {
         String safeName = escapeHtml(name);
         String safeRole = escapeHtml(role);
         String safeCompanyName = escapeHtml(companyName);
         String safeTemporaryPassword = escapeHtml(temporaryPassword);
-        String safeLoginUrl = escapeHtml(defaultIfBlank(mailProperties.getLoginUrl(), "#"));
+        String safeLoginUrl = escapeHtml(buildInviteLoginUrl(email));
         String safeServiceName = escapeHtml(defaultIfBlank(mailProperties.getServiceName(), "CONK"));
 
         return """
@@ -315,6 +317,13 @@ public class MailServiceImpl implements MailService {
     private String createSetupSubject() {
         String serviceName = defaultIfBlank(mailProperties.getServiceName(), "CONK");
         return "[" + serviceName + "] 최초 비밀번호 설정 안내";
+    }
+
+    private String buildInviteLoginUrl(String email) {
+        String baseUrl = defaultIfBlank(mailProperties.getLoginUrl(), "#");
+        String separator = baseUrl.contains("?") ? "&" : "?";
+        String encodedEmail = URLEncoder.encode(defaultIfBlank(email, ""), StandardCharsets.UTF_8);
+        return baseUrl + separator + "forceLogin=1&loginHint=" + encodedEmail;
     }
 
     private String createSetupText(String name, String companyName, String rawToken) {
