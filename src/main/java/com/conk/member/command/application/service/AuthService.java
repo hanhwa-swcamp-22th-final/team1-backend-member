@@ -31,6 +31,8 @@ import com.conk.member.command.infrastructure.service.WarehouseService;
 import com.conk.member.common.exception.ErrorCode;
 import com.conk.member.common.exception.MemberException;
 import com.conk.member.common.jwt.JwtTokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final AccountRepository accountRepository;
     private final SellerRepository sellerRepository;
@@ -90,9 +94,13 @@ public class AuthService {
     // ─── login ────────────────────────────────────────────────────────────────
 
     public LoginResponse login(LoginRequest request) {
+        log.info("[LOGIN] 시도: identifier={}", request.getEmail());
         Account account = findLoginAccount(request.getEmail());
+        log.info("[LOGIN] 계정 조회 성공: accountId={}, status={}", account.getAccountId(), account.getAccountStatus());
         validatePassword(request.getPassword(), account.getPasswordHash());
+        log.info("[LOGIN] 비밀번호 검증 성공: accountId={}", account.getAccountId());
         validateAccountIsActive(account);
+        log.info("[LOGIN] 계정 활성 확인 완료: accountId={}", account.getAccountId());
 
         account.successLogin();
         accountRepository.save(account);
@@ -234,17 +242,22 @@ public class AuthService {
     private Account findLoginAccount(String emailOrWorkerCode) {
         return accountRepository.findByEmail(emailOrWorkerCode)
                 .or(() -> accountRepository.findByWorkerCode(emailOrWorkerCode))
-                .orElseThrow(() -> new MemberException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> {
+                    log.warn("[LOGIN] 계정 없음: identifier={}", emailOrWorkerCode);
+                    return new MemberException(ErrorCode.INVALID_CREDENTIALS);
+                });
     }
 
     private void validatePassword(String rawPassword, String encodedPassword) {
         if (!passwordService.matches(rawPassword, encodedPassword)) {
+            log.warn("[LOGIN] 비밀번호 불일치");
             throw new MemberException(ErrorCode.INVALID_CREDENTIALS);
         }
     }
 
     private void validateAccountIsActive(Account account) {
         if (account.getAccountStatus() == AccountStatus.INACTIVE) {
+            log.warn("[LOGIN] 비활성 계정: accountId={}", account.getAccountId());
             throw new MemberException(ErrorCode.FORBIDDEN, "비활성화된 계정입니다.");
         }
     }
