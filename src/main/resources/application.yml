@@ -2,6 +2,9 @@ spring:
   application:
     name: team1-backend-member
 
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   datasource:
     # Docker: SPRING_DATASOURCE_URL 환경변수로 주입 (member-db:3306)
     # 로컬 직접 실행: 기본값 localhost:3309 사용
@@ -11,6 +14,7 @@ spring:
     driver-class-name: org.mariadb.jdbc.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -39,6 +43,9 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+server:
+  shutdown: graceful
+
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   configuration:
@@ -59,6 +66,7 @@ app:
     login-url: ${MAIL_LOGIN_URL:http://localhost:3000/login}
     service-name: ${MAIL_SERVICE_NAME:CONK}
     setup-base-url: ${MAIL_SETUP_BASE_URL:http://localhost:3000/member/setup-password}
+
 management:
   endpoints:
     web:

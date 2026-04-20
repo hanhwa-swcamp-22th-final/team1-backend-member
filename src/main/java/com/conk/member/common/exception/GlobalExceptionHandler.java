@@ -26,6 +26,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MemberException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleMemberException(MemberException exception) {
+        log.warn("[MemberException] code={} message={}", exception.getErrorCode().getCode(), exception.getMessage());
         Map<String, Object> body = createErrorBody(
                 exception.getErrorCode().getCode(),
                 exception.getMessage()
@@ -37,6 +38,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleBadCredentialsException(BadCredentialsException exception) {
+        log.warn("[BadCredentials] {}", exception.getMessage());
         Map<String, Object> body = createErrorBody(ErrorCode.INVALID_CREDENTIALS.getCode(), exception.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.fail(exception.getMessage(), body));
