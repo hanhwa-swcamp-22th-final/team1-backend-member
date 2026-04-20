@@ -33,6 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return new MemberUserPrincipal(
                 account.getAccountId(),
+                account.getWorkerCode(),
                 account.getAccountName(),
                 account.getSellerId(),
                 account.getTenantId(),

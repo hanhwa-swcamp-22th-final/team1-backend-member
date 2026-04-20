@@ -111,6 +111,7 @@ class LoginCommandServiceTest {
         LoginResponse response = authService.login(request);
 
         assertThat(response.getToken()).isEqualTo("access-token");
+        assertThat(response.getUser().getWorkerCode()).isEqualTo("WC-001");
     }
 
     @Test

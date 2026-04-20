@@ -5,7 +5,7 @@ package com.conk.member.command.application.controller;
  *
  * Nginx는 모든 protected 요청 전에 /_auth → /member/authorization 을 호출한다.
  * JWT가 유효하면 200 + 유저 식별 헤더를 반환하고,
- * Nginx가 그 헤더를 X-User-Id 등으로 백엔드에 전달한다.
+ * Nginx가 그 헤더를 X-User-Id, X-Worker-Code 등으로 백엔드에 전달한다.
  * JWT가 없거나 유효하지 않으면 Spring Security가 401을 반환한다.
  */
 
@@ -35,6 +35,9 @@ public class AuthorizationController {
         builder.header("X-User-Id",   principal.getAccountId());
         builder.header("X-User-Name", encodedName);
         builder.header("X-Role",      principal.getRoleName());
+        if (StringUtils.hasText(principal.getWorkerCode())) {
+            builder.header("X-Worker-Code", principal.getWorkerCode());
+        }
 
         if (StringUtils.hasText(principal.getSellerId())) {
             builder.header("X-Seller-Id", principal.getSellerId());

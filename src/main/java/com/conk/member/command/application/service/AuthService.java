@@ -325,6 +325,7 @@ public class AuthService {
     private LoginResponse buildLoginResponse(Account account, String accessToken, String refreshToken) {
         LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
         userInfo.setId(account.getAccountId());
+        userInfo.setWorkerCode(account.getWorkerCode());
         userInfo.setEmail(account.getEmail());
         userInfo.setName(account.getAccountName());
         userInfo.setRole(account.getRole().getRoleName().name());

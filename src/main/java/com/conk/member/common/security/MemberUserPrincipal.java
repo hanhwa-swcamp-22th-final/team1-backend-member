@@ -13,6 +13,7 @@ import java.util.List;
 public class MemberUserPrincipal implements UserDetails {
 
     private final String accountId;
+    private final String workerCode;
     private final String userName;
     private final String sellerId;
     private final String tenantId;
@@ -21,6 +22,7 @@ public class MemberUserPrincipal implements UserDetails {
     private final List<? extends GrantedAuthority> authorities;
 
     public MemberUserPrincipal(String accountId,
+                               String workerCode,
                                String userName,
                                String sellerId,
                                String tenantId,
@@ -28,6 +30,7 @@ public class MemberUserPrincipal implements UserDetails {
                                String passwordHash,
                                List<? extends GrantedAuthority> authorities) {
         this.accountId = accountId;
+        this.workerCode = workerCode;
         this.userName = userName;
         this.sellerId = sellerId;
         this.tenantId = tenantId;
@@ -38,6 +41,10 @@ public class MemberUserPrincipal implements UserDetails {
 
     public String getAccountId() {
         return accountId;
+    }
+
+    public String getWorkerCode() {
+        return workerCode;
     }
 
     public String getUserName() {

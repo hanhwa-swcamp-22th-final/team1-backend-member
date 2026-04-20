@@ -26,6 +26,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String HEADER_USER_ID = "X-USER-ID";
+    private static final String HEADER_WORKER_CODE = "X-WORKER-CODE";
     private static final String HEADER_USER_NAME = "X-USER-NAME";
     private static final String HEADER_SELLER_ID = "X-SELLER-ID";
     private static final String HEADER_TENANT_ID = "X-TENANT-ID";
@@ -75,6 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (userDetails instanceof MemberUserPrincipal principal) {
             addHeaderIfPresent(wrappedRequest, HEADER_USER_ID, principal.getAccountId());
+            addHeaderIfPresent(wrappedRequest, HEADER_WORKER_CODE, principal.getWorkerCode());
             addHeaderIfPresent(wrappedRequest, HEADER_USER_NAME, principal.getUserName());
             addHeaderIfPresent(wrappedRequest, HEADER_SELLER_ID, principal.getSellerId());
             addHeaderIfPresent(wrappedRequest, HEADER_TENANT_ID, principal.getTenantId());

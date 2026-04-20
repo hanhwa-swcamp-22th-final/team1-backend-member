@@ -45,6 +45,7 @@ class AuthControllerTest {
     private UsernamePasswordAuthenticationToken memberAuthentication(String accountId) {
         MemberUserPrincipal principal = new MemberUserPrincipal(
                 accountId,
+                null,
                 "테스트유저",
                 "SELLER-001",
                 "TENANT-001",
