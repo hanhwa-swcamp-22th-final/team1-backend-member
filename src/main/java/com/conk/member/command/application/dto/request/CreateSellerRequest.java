@@ -14,10 +14,10 @@ public class CreateSellerRequest {
     private String sellerInfo;
     private String brandNameKo;
     private String brandNameEn;
-    private String representativeName;
+    private String contactName;
     private String businessNo;
     private String phoneNo;
-    private String email;
+    private String contactEmail;
     private String categoryName;
     private List<String> warehouseIds;
 }

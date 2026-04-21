@@ -47,10 +47,10 @@ public class CreateSellerCommandService {
         seller.setSellerInfo(request.getSellerInfo());
         seller.setBrandNameKo(request.getBrandNameKo());
         seller.setBrandNameEn(request.getBrandNameEn());
-        seller.setRepresentativeName(request.getRepresentativeName());
+        seller.setRepresentativeName(request.getContactName());
         seller.setBusinessNo(request.getBusinessNo());
         seller.setPhoneNo(request.getPhoneNo());
-        seller.setEmail(request.getEmail());
+        seller.setEmail(request.getContactEmail());
         seller.setCategoryName(request.getCategoryName());
         seller.setStatus(SellerStatus.ACTIVE);
         seller.setCustomerCode(businessCodeGenerator.nextCustomerCode());
