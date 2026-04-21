@@ -11,13 +11,13 @@ import java.util.List;
 @NoArgsConstructor
 public class CreateSellerRequest {
     private String tenantId;
-    private String sellerInfo;
+    private String sellerInfo="test";
     private String brandNameKo;
     private String brandNameEn;
     private String contactName;
-    private String businessNo;
-    private String phoneNo;
+    private String businessNo="012-1231-123";
+    private String phoneNo="010-1234-1234";
     private String contactEmail;
-    private String categoryName;
+    private String categoryName="test";
     private List<String> warehouseIds;
 }
